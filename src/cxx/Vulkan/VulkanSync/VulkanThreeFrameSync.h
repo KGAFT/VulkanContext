@@ -56,6 +56,22 @@ public:
             imageAvailableSemaphores[currentFrame], // must be a not signaled semaphore
             VK_NULL_HANDLE,
             &result);
+        if(result>2){
+            vkWaitForFences(
+            device->getDevice(),
+            1,
+            &inFlightFences[currentFrame],
+            VK_TRUE,
+            std::numeric_limits<uint64_t>::max());
+     
+        vkAcquireNextImageKHR(
+            device->getDevice(),
+            swapChain,
+            std::numeric_limits<uint64_t>::max(),
+            imageAvailableSemaphores[currentFrame], // must be a not signaled semaphore
+            VK_NULL_HANDLE,
+            &result);
+        }
 
         return result;
     }

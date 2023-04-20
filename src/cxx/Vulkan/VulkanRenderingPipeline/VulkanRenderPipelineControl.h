@@ -23,6 +23,7 @@ public:
     std::pair<VkCommandBuffer, VkFramebuffer> beginRender(){
         currentCmd = syncManager->prepareFrame();
         syncManager->beginCommandBuffer(commandBuffers[currentCmd]);
+
         return std::pair(commandBuffers[currentCmd], renderPass->getFrameBuffers()[currentCmd]);
     }
     void endRender(){

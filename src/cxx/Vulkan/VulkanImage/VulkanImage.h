@@ -181,7 +181,6 @@ public:
     VulkanImage(VkImage image, VulkanDevice *device,
                 VkDeviceMemory imageMemory, VkFormat format, int width, int height) : image(image),
                                                                                       device(device),
-                                                                                      view(view),
                                                                                       imageMemory(imageMemory),
                                                                                       format(format),
                                                                                       width(width),

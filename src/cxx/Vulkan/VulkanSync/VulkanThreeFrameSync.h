@@ -56,7 +56,7 @@ public:
             imageAvailableSemaphores[currentFrame], // must be a not signaled semaphore
             VK_NULL_HANDLE,
             &result);
-        if(result>2){
+        while(result>2){
             vkWaitForFences(
             device->getDevice(),
             1,

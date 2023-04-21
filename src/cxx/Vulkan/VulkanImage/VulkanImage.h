@@ -177,6 +177,9 @@ private:
     int width;
     int height;
     bool destroyed = false;
+    VkImageCopy imageCopyRegion{};
+    VkClearColorValue clearColorValue{};
+    VkImageSubresourceRange imageSubresourceRange{};
 public:
     VulkanImage(VkImage image, VulkanDevice *device,
                 VkDeviceMemory imageMemory, VkFormat format, int width, int height) : image(image),
@@ -202,7 +205,11 @@ public:
 
     void copyToImage(VulkanImage *target) {
         VkCommandBuffer cmd = device->beginSingleTimeCommands();
-        VkImageCopy imageCopyRegion{};
+        copyToImage(target, cmd);
+        device->endSingleTimeCommands(cmd);
+    }
+    void copyToImage(VulkanImage* target, VkCommandBuffer cmd){
+        imageCopyRegion = {};
         imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageCopyRegion.srcSubresource.layerCount = 1;
         imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -216,7 +223,27 @@ public:
                 target->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 1,
                 &imageCopyRegion);
+    }
+
+    void clearImage(float r, float g, float b, float a){
+        VkCommandBuffer cmd = device->beginSingleTimeCommands();
+        clearImage(r,g,b,a,cmd);
         device->endSingleTimeCommands(cmd);
+    }
+
+    void clearImage(float r, float g, float b, float a, VkCommandBuffer cmd){
+        clearColorValue = {};
+        clearColorValue.float32[0] = r;
+        clearColorValue.float32[1] = g;
+        clearColorValue.float32[2] = b;
+        clearColorValue.float32[3] = a;
+        imageSubresourceRange = {};
+        imageSubresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageSubresourceRange.baseMipLevel   = 0;
+        imageSubresourceRange.levelCount     = 1;
+        imageSubresourceRange.baseArrayLayer = 0;
+        imageSubresourceRange.layerCount     = 1;
+        vkCmdClearColorImage(cmd, this->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,&clearColorValue, 1, &imageSubresourceRange);
     }
 
     VkFormat getFormat() {

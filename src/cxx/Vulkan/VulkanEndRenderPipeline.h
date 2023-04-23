@@ -24,7 +24,6 @@ private:
     VulkanDevice *device;
     VulkanSyncManager *syncManager;
     VulkanShader *shader;
-    PipelineEndConfig *endConfig;
     std::vector<VkImageView> imageViews;
     int currentWidth;
     int currentHeight;
@@ -55,8 +54,7 @@ public:
                             PipelineEndConfig *endConfig, int startFrameBufferWidth, int startFrameBufferHeight,
                             std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat)
         : imagePerStepAmount(imagePerStepAmount), device(device), imageFormat(imageFormat),
-          syncManager(syncManager), shader(shader),
-          endConfig(endConfig), currentWidth(startFrameBufferWidth), currentHeight(startFrameBufferHeight)
+          syncManager(syncManager), shader(shader), currentWidth(startFrameBufferWidth), currentHeight(startFrameBufferHeight)
     {
         this->imageViews.clear();
         for (auto item: imageViews){
@@ -109,7 +107,9 @@ public:
         currentCommandBuffer = rendInfo.first;
         return rendInfo.first;
     }
-
+    std::vector<VkImageView>& getDepthImages(){
+        return renderPass->getDepthImageViews();
+    }
     void updatePcs()
     {
         manager->loadConstantsToShader(currentCommandBuffer, configurer->getPipelineLayout());

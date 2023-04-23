@@ -20,5 +20,9 @@ if(UNIX)
     set(VulkanLibList vulkan shaderc_shared)
 endif()
 
-
-target_link_libraries(VulkanContext ${VulkanLibList})
+if(ANDROID)
+    MESSAGE("PLATFORM: ANDROID")
+else ()
+    target_link_libraries(VulkanContext ${VulkanLibList})
+    MESSAGE("PLATFORM: DESKTOP")
+endif ()

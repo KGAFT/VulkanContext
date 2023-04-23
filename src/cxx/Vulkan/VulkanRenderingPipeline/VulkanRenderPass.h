@@ -54,6 +54,10 @@ public:
 
     }
 
+    vector<VkImageView> &getDepthImageViews()  {
+        return depthImageViews;
+    }
+
     const std::vector<VkFramebuffer> &getFrameBuffers() const {
         return frameBuffers;
     }

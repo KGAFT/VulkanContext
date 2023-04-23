@@ -249,7 +249,17 @@ public:
     VkFormat getFormat() {
         return format;
     }
-
+    void resize(int width, int height){
+        destroy();
+        destroyed = false;
+        device->createImage(width, height, this->format, VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            image, true);
+        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
+        transitionImageLayout(device, image, this->format, VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        view = device->createImageView(image, this->format);
+    }
     void destroy() {
         if (!destroyed) {
             vkDestroyImageView(device->getDevice(), view, nullptr);

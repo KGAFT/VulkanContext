@@ -54,7 +54,7 @@ public:
 
     }
 
-    vector<VkImageView> &getDepthImageViews()  {
+    std::vector<VkImageView> &getDepthImageViews() {
         return depthImageViews;
     }
 

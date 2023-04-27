@@ -22,7 +22,7 @@ public:
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, width, height);
     }
-    static VulkanImage* createImgeWithFormat(VulkanDevice* device, unsigned int width, unsigned int height, VkFormat format){
+    static VulkanImage* createImageWithFormat(VulkanDevice* device, unsigned int width, unsigned int height, VkFormat format){
         VkImage image;
         device->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL,
                             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -199,7 +199,7 @@ public:
                                                                                       format(format),
                                                                                       width(width),
                                                                                       height(height) {
-        view = device->createImageView(image, VK_FORMAT_R8G8B8A8_SRGB);
+        view = device->createImageView(image, format);
     }
 
     VkImage getImage() {
@@ -221,9 +221,9 @@ public:
     }
     void copyToImage(VulkanImage* target, VkCommandBuffer cmd){
         imageCopyRegion = {};
-        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
         imageCopyRegion.srcSubresource.layerCount = 1;
-        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
         imageCopyRegion.dstSubresource.layerCount = 1;
         imageCopyRegion.extent.width = width;
         imageCopyRegion.extent.height = height;
@@ -237,9 +237,9 @@ public:
     }
     void copyFromImage(VkImage image, VkCommandBuffer cmd){
         imageCopyRegion = {};
-        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
         imageCopyRegion.srcSubresource.layerCount = 1;
-        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
         imageCopyRegion.dstSubresource.layerCount = 1;
         imageCopyRegion.extent.width = width;
         imageCopyRegion.extent.height = height;

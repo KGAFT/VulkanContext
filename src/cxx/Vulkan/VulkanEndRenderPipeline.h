@@ -107,8 +107,11 @@ public:
         currentCommandBuffer = rendInfo.first;
         return rendInfo.first;
     }
-    std::vector<VkImageView>& getDepthImages(){
+    std::vector<VkImageView>& getDepthImageViews(){
         return renderPass->getDepthImageViews();
+    }
+    std::vector<VkImage>& getDepthImages(){
+        return renderPass->getDepthImages();
     }
     void updatePcs()
     {

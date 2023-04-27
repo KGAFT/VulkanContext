@@ -22,7 +22,18 @@ public:
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, width, height);
     }
+    static VulkanImage* createImgeWithFormat(VulkanDevice* device, unsigned int width, unsigned int height, VkFormat format){
+        VkImage image;
+        device->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            image, true);
+        VkDeviceMemory imageMemory;
+        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
+        transitionImageLayout(device, image, format, VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        return new VulkanImage(image, device, imageMemory, format, width, height);
 
+    }
     static VulkanImage *loadTexture(const char *pathToTexture, VulkanDevice *device) {
         int imageWidth, imageHeight, imageChannels;
         stbi_uc *imageData = stbi_load(pathToTexture, &imageWidth, &imageHeight, &imageChannels, STBI_rgb_alpha);
@@ -223,6 +234,28 @@ public:
                 target->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 1,
                 &imageCopyRegion);
+    }
+    void copyFromImage(VkImage image, VkCommandBuffer cmd){
+        imageCopyRegion = {};
+        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.srcSubresource.layerCount = 1;
+        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageCopyRegion.dstSubresource.layerCount = 1;
+        imageCopyRegion.extent.width = width;
+        imageCopyRegion.extent.height = height;
+        imageCopyRegion.extent.depth = 1;
+        vkCmdCopyImage(
+                cmd,
+                image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                this->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1,
+                &imageCopyRegion);
+    }
+
+    void copyFromImage(VkImage image){
+        VkCommandBuffer cmd = device->beginSingleTimeCommands();
+        copyFromImage(image, cmd);
+        device->endSingleTimeCommands(cmd);
     }
 
     void clearImage(float r, float g, float b, float a){

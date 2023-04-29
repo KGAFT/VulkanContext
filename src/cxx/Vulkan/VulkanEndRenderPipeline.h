@@ -47,7 +47,7 @@ private:
     VkCommandBuffer currentCommandBuffer;
     VulkanDescriptors *descriptors = nullptr;
     VulkanPushConstantManager *manager;
-    bool uboBound = false;
+    bool alphaBlendEnabled = false;
 
 public:
     VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyncManager *syncManager, VulkanShader *shader,
@@ -61,7 +61,8 @@ public:
             this->imageViews.push_back(item);
         }
         createRenderPass(startFrameBufferWidth, startFrameBufferHeight, imagePerStepAmount, imageFormat);
-        createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight);
+        this->alphaBlendEnabled = endConfig->alphaBlend;
+        createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight, alphaBlendEnabled);
         createControl();
         if (configurer->getDescriptorSetLayout() != VK_NULL_HANDLE)
         {
@@ -103,7 +104,6 @@ public:
         vkCmdBeginRenderPass(rendInfo.first, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(rendInfo.first, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getGraphicsPipeline());
 
-        uboBound = false;
         currentCommandBuffer = rendInfo.first;
         return rendInfo.first;
     }
@@ -167,7 +167,7 @@ public:
         }
         renderPass->recreate(imageViews, width, height, this->imagePerStepAmount, &this->imageFormat, 1);
         graphicsPipeline->recreate(
-            PipelineConfiguration::defaultPipelineConfigInfo(width, height, renderPass->getAttachmentCount()),
+            PipelineConfiguration::defaultPipelineConfigInfo(width, height, renderPass->getAttachmentCount(), alphaBlendEnabled),
             renderPass);
         control->setRenderPass(renderPass);
     }
@@ -287,12 +287,12 @@ private:
                                               nullptr);
     }
 
-    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height)
+    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending)
     {
         configurer = new GraphicsPipelineConfigurer(device, endConfig);
         graphicsPipeline = new VulkanGraphicsPipeline(device, configurer, shader,
                                                       PipelineConfiguration::defaultPipelineConfigInfo(width, height,
-                                                                                                       renderPass->getAttachmentCount()),
+                                                                                                       renderPass->getAttachmentCount(), alphaBlending),
                                                       renderPass);
     }
 

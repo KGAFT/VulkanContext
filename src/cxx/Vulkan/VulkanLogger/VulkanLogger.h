@@ -134,7 +134,6 @@ public:
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         describeLogger(createInfo, nullptr);
         if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-            return false;
         }
         return true;
     }

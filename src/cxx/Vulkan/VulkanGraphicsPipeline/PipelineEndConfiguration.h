@@ -31,4 +31,5 @@ struct PipelineEndConfig{
     std::vector<UniformBufferInfo> uniformBuffers;
     std::vector<VertexInput> vertexInputs;
     std::vector<PushConstantInfo> pushConstantInfos;
+    bool alphaBlend = true;
 };

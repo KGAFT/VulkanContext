@@ -35,8 +35,6 @@ private:
     GraphicsPipelineConfigurer *configurer;
     VulkanRenderPipelineControl *control;
 
-    std::vector<VulkanUniformBuffer *> uniformBuffers;
-    std::vector<VulkanSampler *> samplers;
     std::vector<VulkanPushConstant *> pushConstants;
 
     int imagePerStepAmount = 0;
@@ -66,7 +64,7 @@ public:
         createControl();
         if (configurer->getDescriptorSetLayout() != VK_NULL_HANDLE)
         {
-            descriptors = new VulkanDescriptors(device, configurer->getDescriptorSetLayout(),
+            descriptors = new VulkanDescriptors(device, endConfig, configurer->getDescriptorSetLayout(),
                                                 syncManager->getCurrentMode());
         }
 
@@ -78,8 +76,7 @@ public:
             manager->registerPushConstant(item);
         }
 
-        createSamplers(endConfig);
-        createUniforms(endConfig);
+
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     }
 
@@ -113,28 +110,22 @@ public:
     std::vector<VkImage>& getDepthImages(){
         return renderPass->getDepthImages();
     }
-    void updatePcs()
+    void updatePushConstants()
     {
         manager->loadConstantsToShader(currentCommandBuffer, configurer->getPipelineLayout());
     }
-
-    void updateSamplers()
-    {
-        for (int i = 0; i < syncManager->getCurrentMode(); i++)
-        {
-            descriptors->writeDescriptorObjects(reinterpret_cast<IDescriptorObject **>(samplers.data()), samplers.size(), i);
-        }
+    VulkanDescriptorSet* acquireDescriptorSet(){
+        return descriptors->acquireDescriptorSet();
     }
 
-    void updateUniforms(){
-        for (int i = 0; i < syncManager->getCurrentMode(); i++)
-        {
-            descriptors->writeDescriptorObjects(reinterpret_cast<IDescriptorObject **>(uniformBuffers.data()), uniformBuffers.size(), i);
-        }
+    void bindImmediate(VulkanDescriptorSet* set){
+        set->bind(control->getCurrentCmd(), currentCommandBuffer, getPipelineLayout());
     }
-    void bindImmediate(){
-        descriptors->bind(control->getCurrentCmd(), currentCommandBuffer, configurer->getPipelineLayout());
+
+    VkPipelineLayout getPipelineLayout(){
+        return configurer->getPipelineLayout();
     }
+
 
     void endRender()
     {
@@ -188,16 +179,7 @@ public:
         if (!destroyed)
         {
             vkDeviceWaitIdle(device->getDevice());
-            for (const auto &item : uniformBuffers)
-            {
-                delete item;
-            }
-            uniformBuffers.clear();
-            for (const auto &item : samplers)
-            {
-                delete item;
-            }
-            samplers.clear();
+
             for (const auto &item : pushConstants)
             {
                 delete item;
@@ -224,15 +206,6 @@ public:
         destroy();
     }
 
-    std::vector<VulkanSampler *> &getSamplers()
-    {
-        return samplers;
-    }
-
-    std::vector<VulkanUniformBuffer *> &getUniformBuffers()
-    {
-        return uniformBuffers;
-    }
 
     std::vector<VulkanPushConstant *> &getPushConstants()
     {
@@ -262,22 +235,7 @@ private:
         }
     }
 
-    void createUniforms(PipelineEndConfig *endConfig)
-    {
-        for (const auto &item : endConfig->uniformBuffers)
-        {
-            uniformBuffers.push_back(new VulkanUniformBuffer(device, item.size, item.shaderStages, item.binding,
-                                                             syncManager->getCurrentMode()));
-        }
-    }
 
-    void createSamplers(PipelineEndConfig *endConfig)
-    {
-        for (const auto &item : endConfig->samplers)
-        {
-            samplers.push_back(new VulkanSampler(device, item.binding));
-        }
-    }
 
     void createRenderPass(int width, int height, int imagePerStepAmount, VkFormat imageFormat)
     {

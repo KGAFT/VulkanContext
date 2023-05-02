@@ -11,12 +11,11 @@ struct CubemapTextureInfo {
 	const char* pathToDownFace;
 	const char* pathToRightFace;
 	const char* pathToLeftFace;
-
 };
 
 class VulkanCubemapImage {
 public:
-	VulkanCubemapImage* createCubemap(VulkanDevice* device, CubemapTextureInfo& info) {
+	static VulkanCubemapImage* createCubemap(VulkanDevice* device, CubemapTextureInfo& info) {
 		stbi_uc* imageData[6];
 		int width = {0};
 		int height = {0};
@@ -144,5 +143,10 @@ private:
         createInfo.subresourceRange.levelCount = 1;
         createInfo.image = image;
         vkCreateImageView(device->getDevice(), &createInfo, nullptr, &view);
+    }
+public:
+
+    VkImageView getImageView(){
+        return view;
     }
 };

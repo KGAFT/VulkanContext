@@ -3,7 +3,7 @@
 #include "../../External/stb_image.h"
 #include "../VulkanDevice/VulkanDevice.h"
 #include "VulkanImage.h"
-
+#include <cstdint>
 struct CubemapTextureInfo {
 	const char* pathToFrontFace;
 	const char* pathToBackFace;
@@ -27,9 +27,9 @@ public:
 		imageData[4] = stbi_load(info.pathToRightFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
 		imageData[5] = stbi_load(info.pathToLeftFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
 		
-
-		VkDeviceSize imageSize = width * height * 4 * 6; 
-		VkDeviceSize layerSize = imageSize / 6;
+        VkDeviceSize layerSize = width * height * numChannelsAmount ;
+		VkDeviceSize imageSize = layerSize * 6; 
+		
 
 		VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -37,10 +37,16 @@ public:
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
                              stagingBufferMemory);
 		void* data;
-        vkMapMemory(device->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-
+        
+        uint64_t memAddress;
 		for(unsigned int i = 0; i<6; i++){
-			memcpy((void*)(reinterpret_cast<long long>(data) + (layerSize * i)), imageData[i], layerSize);
+            if(i==0){
+                vkMapMemory(device->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
+                memAddress = reinterpret_cast<uint64_t>(data);
+             }
+			 memcpy(reinterpret_cast<void*>(memAddress), static_cast<void*>(imageData[i]), static_cast<size_t>(layerSize));
+             memAddress += layerSize;
+            
 		}
         vkUnmapMemory(device->getDevice(), stagingBufferMemory);
 
@@ -52,6 +58,9 @@ public:
         transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, device, 6);
         vkDestroyBuffer(device->getDevice(), stagingBuffer, nullptr);
         vkFreeMemory(device->getDevice(), stagingBufferMemory, nullptr);
+        for(int i = 0; i<6; i++){
+            stbi_image_free(imageData[i]);
+        }
         return new VulkanCubemapImage(device, image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, 6);
 	}
 private:

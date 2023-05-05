@@ -4,67 +4,68 @@
 #include "../VulkanDevice/VulkanDevice.h"
 #include "VulkanImage.h"
 #include <cstdint>
-struct CubemapTextureInfo {
-	const char* pathToFrontFace;
-	const char* pathToBackFace;
-	const char* pathToUpFace;
-	const char* pathToDownFace;
-	const char* pathToRightFace;
-	const char* pathToLeftFace;
+struct CubemapTextureInfo
+{
+    const char *pathToFrontFace;
+    const char *pathToBackFace;
+    const char *pathToUpFace;
+    const char *pathToDownFace;
+    const char *pathToRightFace;
+    const char *pathToLeftFace;
 };
 
-class VulkanCubemapImage {
+class VulkanCubemapImage
+{
 public:
-	static VulkanCubemapImage* createCubemap(VulkanDevice* device, CubemapTextureInfo& info) {
-		stbi_uc* imageData[6];
-		int width = {0};
-		int height = {0};
-		int numChannelsAmount = { 0 };
-		imageData[0] = stbi_load(info.pathToFrontFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		imageData[1] = stbi_load(info.pathToBackFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		imageData[2] = stbi_load(info.pathToUpFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		imageData[3] = stbi_load(info.pathToDownFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		imageData[4] = stbi_load(info.pathToRightFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		imageData[5] = stbi_load(info.pathToLeftFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
-		
-        VkDeviceSize layerSize = width * height * numChannelsAmount ;
-		VkDeviceSize imageSize = layerSize * 6; 
-		
+    static VulkanCubemapImage *createCubemap(VulkanDevice *device, CubemapTextureInfo &info)
+    {
+        stbi_uc *imageData[6];
+        int width = {0};
+        int height = {0};
+        int numChannelsAmount = {0};
+        imageData[0] = stbi_load(info.pathToFrontFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
+        imageData[1] = stbi_load(info.pathToBackFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
+        imageData[2] = stbi_load(info.pathToUpFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
+        imageData[3] = stbi_load(info.pathToDownFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
+        imageData[4] = stbi_load(info.pathToRightFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
+        imageData[5] = stbi_load(info.pathToLeftFace, &width, &height, &numChannelsAmount, STBI_rgb_alpha);
 
-		VkBuffer stagingBuffer;
+        VkDeviceSize layerSize = width * height * 4;
+        VkDeviceSize imageSize = layerSize * 6;
+        VkImage image;
+        VkDeviceMemory imageMemory;
+        createImage(device, image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, width, height, 6, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
                              stagingBufferMemory);
-		void* data;
-        
-        uint64_t memAddress;
-		for(unsigned int i = 0; i<6; i++){
-            if(i==0){
-                vkMapMemory(device->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-                memAddress = reinterpret_cast<uint64_t>(data);
-             }
-			 memcpy(reinterpret_cast<void*>(memAddress), static_cast<void*>(imageData[i]), static_cast<size_t>(layerSize));
-             memAddress += layerSize;
-            
-		}
-        vkUnmapMemory(device->getDevice(), stagingBufferMemory);
+        void *data;
 
-        VkImage image;
-        VkDeviceMemory imageMemory;
-        createImage(device ,image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TILING_OPTIMAL, width, height, 6, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        uint64_t memAddress;
+
+        for (int i = 0; i < 6; i++)
+        {
+            vkMapMemory(device->getDevice(), stagingBufferMemory, layerSize * i, layerSize, 0, &data);
+            memcpy(data, imageData[i], layerSize);
+            vkUnmapMemory(device->getDevice(), stagingBufferMemory);
+        }
+
         transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, device, 6);
         device->copyBufferToImage(stagingBuffer, image, width, height, 6);
         transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, device, 6);
         vkDestroyBuffer(device->getDevice(), stagingBuffer, nullptr);
         vkFreeMemory(device->getDevice(), stagingBufferMemory, nullptr);
-        for(int i = 0; i<6; i++){
+        for (int i = 0; i < 6; i++)
+        {
             stbi_image_free(imageData[i]);
         }
         return new VulkanCubemapImage(device, image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, 6);
-	}
+    }
+
 private:
-	static void transitionImageLayout(VkImage target, VkImageLayout oldLayout, VkImageLayout newLayout, VulkanDevice* device, int layerAmount)
+    static void transitionImageLayout(VkImage target, VkImageLayout oldLayout, VkImageLayout newLayout, VulkanDevice *device, int layerAmount)
     {
         VkCommandBuffer commandBuffer = device->beginSingleTimeCommands();
 
@@ -101,19 +102,18 @@ private:
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
 
-        vkCmdPipelineBarrier
-        (
+        vkCmdPipelineBarrier(
             commandBuffer,
             sourceStage, destinationStage,
             0,
             0, nullptr,
             0, nullptr,
-            1, &barrier
-        );
+            1, &barrier);
 
         device->endSingleTimeCommands(commandBuffer);
     }
-    static void createImage(VulkanDevice* device, VkImage& target, VkDeviceMemory& imageMemory, VkFormat imageFormat, VkImageUsageFlags usageFlags,VkImageTiling imageTilling,int width, int height, int amountOfImages, VkMemoryPropertyFlags properties){
+    static void createImage(VulkanDevice *device, VkImage &target, VkDeviceMemory &imageMemory, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageTiling imageTilling, int width, int height, int amountOfImages, VkMemoryPropertyFlags properties)
+    {
 
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -131,15 +131,16 @@ private:
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         device->createImageWithInfo(imageInfo, properties, target, imageMemory);
-
     }
+
 private:
-    VulkanDevice* device;
+    VulkanDevice *device;
     VkImage image;
     VkImageView view;
     VkDeviceMemory imageMemory;
     VkFormat imageFormat;
-    VulkanCubemapImage(VulkanDevice* device, VkImage image, VkDeviceMemory imageMemory, VkFormat imageFormat, int layerCount) : device(device), image(image), imageMemory(imageMemory), imageFormat(imageFormat){
+    VulkanCubemapImage(VulkanDevice *device, VkImage image, VkDeviceMemory imageMemory, VkFormat imageFormat, int layerCount) : device(device), image(image), imageMemory(imageMemory), imageFormat(imageFormat)
+    {
         VkImageViewCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
@@ -153,9 +154,10 @@ private:
         createInfo.image = image;
         vkCreateImageView(device->getDevice(), &createInfo, nullptr, &view);
     }
-public:
 
-    VkImageView getImageView(){
+public:
+    VkImageView getImageView()
+    {
         return view;
     }
 };

@@ -20,6 +20,11 @@
 
 class VulkanEndRenderPipeline
 {
+public:
+    VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyncManager *syncManager, VulkanShader *shader,
+                            PipelineEndConfig *endConfig, int startFrameBufferWidth, int startFrameBufferHeight,
+                            std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat);
+
 private:
     VulkanDevice *device;
     VulkanSyncManager *syncManager;
@@ -29,7 +34,6 @@ private:
     int currentHeight;
     bool destroyed = false;
 
-private:
     VulkanRenderPass *renderPass;
     VulkanGraphicsPipeline *graphicsPipeline;
     GraphicsPipelineConfigurer *configurer;
@@ -46,216 +50,47 @@ private:
     VulkanDescriptors *descriptors = nullptr;
     VulkanPushConstantManager *manager;
     bool alphaBlendEnabled = false;
-
 public:
-    VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyncManager *syncManager, VulkanShader *shader,
-                            PipelineEndConfig *endConfig, int startFrameBufferWidth, int startFrameBufferHeight,
-                            std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat)
-        : imagePerStepAmount(imagePerStepAmount), device(device), imageFormat(imageFormat),
-          syncManager(syncManager), shader(shader), currentWidth(startFrameBufferWidth), currentHeight(startFrameBufferHeight)
-    {
-        this->imageViews.clear();
-        for (auto item: imageViews){
-            this->imageViews.push_back(item);
-        }
-        createRenderPass(startFrameBufferWidth, startFrameBufferHeight, imagePerStepAmount, imageFormat);
-        this->alphaBlendEnabled = endConfig->alphaBlend;
-        createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight, alphaBlendEnabled);
-        createControl();
-        if (configurer->getDescriptorSetLayout() != VK_NULL_HANDLE)
-        {
-            descriptors = new VulkanDescriptors(device, endConfig, configurer->getDescriptorSetLayout(),
-                                                syncManager->getCurrentMode());
-        }
-
-        manager = new VulkanPushConstantManager();
-        createPushConstants(endConfig);
-
-        for (const auto &item : pushConstants)
-        {
-            manager->registerPushConstant(item);
-        }
-
-
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    }
-
     /**
      * Update immediate  data before this
      */
-    VkCommandBuffer beginRender()
-    {
-        std::pair rendInfo = control->beginRender();
-        renderPassInfo.renderPass = renderPass->getRenderPass();
-        renderPassInfo.framebuffer = rendInfo.second;
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = {static_cast<uint32_t>(currentWidth), static_cast<uint32_t>(currentHeight)};
-        unsigned int clearValuesCount = prepareClearValues(nullptr);
-        std::vector<VkClearValue> clearValuesData;
-        clearValuesData.resize(clearValuesCount);
+    VkCommandBuffer beginRender();
 
-        prepareClearValues(clearValuesData.data());
-        renderPassInfo.clearValueCount = clearValuesCount;
-        renderPassInfo.pClearValues = clearValuesData.data();
+    void updatePushConstants();
 
-        vkCmdBeginRenderPass(rendInfo.first, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(rendInfo.first, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->getGraphicsPipeline());
+    VulkanDescriptorSet *acquireDescriptorSet();
 
-        currentCommandBuffer = rendInfo.first;
-        return rendInfo.first;
-    }
-    std::vector<VkImageView>& getDepthImageViews(){
-        return renderPass->getDepthImageViews();
-    }
-    std::vector<VkImage>& getDepthImages(){
-        return renderPass->getDepthImages();
-    }
-    void updatePushConstants()
-    {
-        manager->loadConstantsToShader(currentCommandBuffer, configurer->getPipelineLayout());
-    }
-    VulkanDescriptorSet* acquireDescriptorSet(){
-        return descriptors->acquireDescriptorSet();
-    }
+    void bindImmediate(VulkanDescriptorSet *set);
 
-    void bindImmediate(VulkanDescriptorSet* set){
-        set->bind(control->getCurrentCmd(), currentCommandBuffer, getPipelineLayout());
-    }
+    VkPipelineLayout getPipelineLayout();
 
-    VkPipelineLayout getPipelineLayout(){
-        return configurer->getPipelineLayout();
-    }
-
-
-    void endRender()
-    {
-        vkCmdEndRenderPass(currentCommandBuffer);
-
-        control->endRender();
-    }
+    void endRender();
 
     void resized(int width, int height, std::vector<VkImageView> &newImageViews, int imagePerStepAmount,
-                 VkFormat imageFormat)
-    {
-        vkDeviceWaitIdle(device->getDevice());
-        currentWidth = width;
-        currentHeight = height;
-        if (syncManager->getSwapChain() != nullptr)
-        {
-            syncManager->getSwapChain()->recreate(width, height);
-            imageViews = syncManager->getSwapChain()->getSwapChainImageViews();
-            this->imagePerStepAmount = 1;
-            this->imageFormat = syncManager->getSwapChain()->getSwapChainImageFormat();
-        }
-        else
-        {
-            this->imageViews.clear();
-            for (auto item: newImageViews){
-                this->imageViews.push_back(item);
-            }
-            this->imagePerStepAmount = imagePerStepAmount;
-            this->imageFormat = imageFormat;
-        }
-        renderPass->recreate(imageViews, width, height, this->imagePerStepAmount, &this->imageFormat, 1);
-        graphicsPipeline->recreate(
-            PipelineConfiguration::defaultPipelineConfigInfo(width, height, renderPass->getAttachmentCount(), alphaBlendEnabled),
-            renderPass);
-        control->setRenderPass(renderPass);
-    }
+                 VkFormat imageFormat);
 
-    void resized(int width, int height)
-    {
-        std::vector<VkImageView> img;
-        resized(width, height, img, this->imagePerStepAmount, VK_FORMAT_R32G32B32_SFLOAT);
-    }
+    void resized(int width, int height);
 
-    VkImageView getCurrentImage()
-    {
-        return imageViews[control->getCurrentCmd()];
-    }
+    VkImageView getCurrentImage();
 
-    void destroy()
-    {
-        if (!destroyed)
-        {
-            vkDeviceWaitIdle(device->getDevice());
+    std::vector<VkImageView> &getDepthImageViews();
 
-            for (const auto &item : pushConstants)
-            {
-                delete item;
-            }
-            pushConstants.clear();
-            if (manager != nullptr)
-            {
-                delete manager;
-            }
-            if (descriptors != nullptr)
-            {
-                delete descriptors;
-            }
-            delete control;
-            delete graphicsPipeline;
-            delete renderPass;
-            delete configurer;
-            destroyed = true;
-        }
-    }
+    std::vector<VkImage> &getDepthImages();
 
-    ~VulkanEndRenderPipeline()
-    {
-        destroy();
-    }
+    void destroy();
 
+    ~VulkanEndRenderPipeline();
 
-    std::vector<VulkanPushConstant *> &getPushConstants()
-    {
-        return pushConstants;
-    }
+    std::vector<VulkanPushConstant *> &getPushConstants();
 
 private:
-    const unsigned int prepareClearValues(VkClearValue *result) const
-    {
-        if (result == nullptr)
-        {
-            return renderPass->getAttachmentCount() + 1;
-        }
-        for (int i = 0; i < renderPass->getAttachmentCount(); ++i)
-        {
-            result[i].color = {clearColorValues[0], clearColorValues[1], clearColorValues[2], clearColorValues[3]};
-        }
-        result[renderPass->getAttachmentCount()].depthStencil = {1.0f, 0};
-        return renderPass->getAttachmentCount() + 1;
-    }
+    const unsigned int prepareClearValues(VkClearValue *result) const;
 
-    void createPushConstants(PipelineEndConfig *endConfig)
-    {
-        for (const auto &item : endConfig->pushConstantInfos)
-        {
-            pushConstants.push_back(new VulkanPushConstant(item.size, item.shaderStages));
-        }
-    }
+    void createPushConstants(PipelineEndConfig *endConfig);
 
+    void createRenderPass(int width, int height, int imagePerStepAmount, VkFormat imageFormat);
 
+    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending);
 
-    void createRenderPass(int width, int height, int imagePerStepAmount, VkFormat imageFormat)
-    {
-        this->imagePerStepAmount = imagePerStepAmount;
-        renderPass = new VulkanRenderPass(device, imageViews, width, height, imagePerStepAmount, &imageFormat, 1,
-                                          syncManager->getSwapChain() !=
-                                              nullptr);
-    }
-
-    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending)
-    {
-        configurer = new GraphicsPipelineConfigurer(device, endConfig);
-        graphicsPipeline = new VulkanGraphicsPipeline(device, configurer, shader,
-                                                      PipelineConfiguration::defaultPipelineConfigInfo(width, height,
-                                                                                                       renderPass->getAttachmentCount(), alphaBlending),
-                                                      renderPass);
-    }
-
-    void createControl()
-    {
-        control = new VulkanRenderPipelineControl(syncManager, device, renderPass);
-    }
+    void createControl();
 };

@@ -1,3 +1,5 @@
+set(VulkanSDKPath /home/kgaft/VulkanSDK/1.3.243.0/x86_64)
+
 cmake_minimum_required(VERSION 3.0)
 project(VulkanContext)
 
@@ -9,19 +11,25 @@ add_library(VulkanContext ${H_FILES} ${CPP_FILES})
 
 
 if(WIN32)
-    target_include_directories(VulkanContext PUBLIC src/cxx ${VulkanSDKPath}/Include)
+    target_include_directories(VulkanContext  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  ${VulkanSDKPath}/Include)
     target_link_directories(VulkanContext PUBLIC ${VulkanSDKPath}/bin ${VulkanSDKPath}/lib)
     set(VulkanLibList shaderc_shared vulkan-1)
 endif()
 
 if(UNIX)
-    target_include_directories(VulkanContext PUBLIC src/cxx ${VulkanSDKPath}/include)
+    target_include_directories(VulkanContext INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            ${VulkanSDKPath}/include
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> )
     target_link_directories(VulkanContext PUBLIC ${VulkanSDKPath}/bin ${VulkanSDKPath}/lib)
     set(VulkanLibList vulkan shaderc_shared)
 endif()
 
 if(ANDROID)
     MESSAGE("PLATFORM: ANDROID")
+
 else ()
     target_link_libraries(VulkanContext ${VulkanLibList})
     MESSAGE("PLATFORM: DESKTOP")

@@ -1,5 +1,3 @@
-set(VulkanSDKPath /home/kgaft/VulkanSDK/1.3.243.0/x86_64/)
-
 cmake_minimum_required(VERSION 3.0)
 project(VulkanContext)
 

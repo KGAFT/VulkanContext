@@ -32,6 +32,7 @@ public:
     void submitCommandBuffers(VkCommandBuffer *buffers, VkSwapchainKHR swapChain, unsigned int *currentImage);
 
     void destroy();
+    ~VulkanThreeFrameSync();
 
 private:
     void createSyncObjects();

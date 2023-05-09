@@ -1,13 +1,13 @@
 #include "VulkanLogger.h"
 
-VulkanLogger::validationLayers = {"VK_LAYER_KHRONOS_validation"};
-VulkanLogger::debugMessenger = NULL;
+const std::vector<const char *> VulkanLogger::validationLayers = {"VK_LAYER_KHRONOS_validation"};
+VkDebugUtilsMessengerEXT VulkanLogger::debugMessenger = NULL;
 
-VulkanLogger::rawCallbacks = std::vector<IVulkanLoggerCallback *>();
-VulkanLogger::translatedCallbacks = std::vector<IVulkanLoggerCallback *>();
-VulkanLogger::bothCallbacks = std::vector<IVulkanLoggerCallback *>();
+std::vector<IVulkanLoggerCallback *> VulkanLogger::rawCallbacks = std::vector<IVulkanLoggerCallback *>();
+std::vector<IVulkanLoggerCallback *> VulkanLogger::translatedCallbacks = std::vector<IVulkanLoggerCallback *>();
+std::vector<IVulkanLoggerCallback *> VulkanLogger::bothCallbacks = std::vector<IVulkanLoggerCallback *>();
 
-static VkBool32 VulkanLogger::debugCallback(
+VkBool32 VulkanLogger::debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
@@ -45,7 +45,7 @@ static VkBool32 VulkanLogger::debugCallback(
     return VK_FALSE;
 }
 
-static const char *VulkanLogger::translateSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT severity)
+const char *VulkanLogger::translateSeverity(VkDebugUtilsMessageSeverityFlagBitsEXT severity)
 {
     const char *res;
     switch (severity)
@@ -69,7 +69,7 @@ static const char *VulkanLogger::translateSeverity(VkDebugUtilsMessageSeverityFl
     return res;
 }
 
-static const char *VulkanLogger::translateType(VkDebugUtilsMessageTypeFlagsEXT type)
+const char *VulkanLogger::translateType(VkDebugUtilsMessageTypeFlagsEXT type)
 {
     const char *res;
     switch (type)
@@ -90,7 +90,7 @@ static const char *VulkanLogger::translateType(VkDebugUtilsMessageTypeFlagsEXT t
     return res;
 }
 
-static void VulkanLogger::describeLogger(VkDebugUtilsMessengerCreateInfoEXT &createInfo, VkInstanceCreateInfo *instanceInfo)
+void VulkanLogger::describeLogger(VkDebugUtilsMessengerCreateInfoEXT &createInfo, VkInstanceCreateInfo *instanceInfo)
 {
     if (instanceInfo != nullptr)
     {
@@ -109,7 +109,7 @@ static void VulkanLogger::describeLogger(VkDebugUtilsMessengerCreateInfoEXT &cre
     createInfo.pUserData = nullptr;
 }
 
-static VkResult VulkanLogger::CreateDebugUtilsMessengerEXT(
+VkResult VulkanLogger::CreateDebugUtilsMessengerEXT(
     VkInstance instance,
     VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     VkAllocationCallbacks *pAllocator,
@@ -128,7 +128,7 @@ static VkResult VulkanLogger::CreateDebugUtilsMessengerEXT(
     }
 }
 
-static bool VulkanLogger::init(VkInstance instance)
+bool VulkanLogger::init(VkInstance instance)
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     describeLogger(createInfo, nullptr);
@@ -138,7 +138,7 @@ static bool VulkanLogger::init(VkInstance instance)
     return true;
 }
 
-static void VulkanLogger::registerCallback(IVulkanLoggerCallback *callback)
+void VulkanLogger::registerCallback(IVulkanLoggerCallback *callback)
 {
     if (debugMessenger != NULL)
     {
@@ -157,7 +157,7 @@ static void VulkanLogger::registerCallback(IVulkanLoggerCallback *callback)
     }
 }
 
-static void VulkanLogger::rremoveCallback(IVulkanLoggerCallback *callback)
+void VulkanLogger::removeCallback(IVulkanLoggerCallback *callback)
 {
     if (debugMessenger != NULL)
     {

@@ -1,4 +1,4 @@
-set(VulkanSDKPath /home/kgaft/VulkanSDK/1.3.243.0/x86_64)
+set(VulkanSDKPath /home/kgaft/VulkanSDK/1.3.243.0/x86_64/)
 
 cmake_minimum_required(VERSION 3.0)
 project(VulkanContext)
@@ -9,27 +9,23 @@ file(GLOB_RECURSE H_FILES src/cxx/*.h)
 file(GLOB_RECURSE CPP_FILES src/cxx/*.cpp)
 add_library(VulkanContext ${H_FILES} ${CPP_FILES})
 
-
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/cxx/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include)
+file(GLOB_RECURSE UNNECESSARY_CPP ${CMAKE_CURRENT_BINARY_DIR}/include/*.cpp)
+file(REMOVE ${UNNECESSARY_CPP})
 if(WIN32)
-    target_include_directories(VulkanContext  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  ${VulkanSDKPath}/Include)
+    target_include_directories(VulkanContext PUBLIC src/cxx ${VulkanSDKPath}/Include)
     target_link_directories(VulkanContext PUBLIC ${VulkanSDKPath}/bin ${VulkanSDKPath}/lib)
     set(VulkanLibList shaderc_shared vulkan-1)
 endif()
 
 if(UNIX)
-    target_include_directories(VulkanContext INTERFACE
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-            ${VulkanSDKPath}/include
-            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}> )
+    target_include_directories(VulkanContext PUBLIC src/cxx ${VulkanSDKPath}/include)
     target_link_directories(VulkanContext PUBLIC ${VulkanSDKPath}/bin ${VulkanSDKPath}/lib)
     set(VulkanLibList vulkan shaderc_shared)
 endif()
 
 if(ANDROID)
     MESSAGE("PLATFORM: ANDROID")
-
 else ()
     target_link_libraries(VulkanContext ${VulkanLibList})
     MESSAGE("PLATFORM: DESKTOP")

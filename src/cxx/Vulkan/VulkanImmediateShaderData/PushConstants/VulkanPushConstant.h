@@ -5,29 +5,24 @@
 
 #include <vulkan/vulkan.h>
 
-class VulkanPushConstant{
+class VulkanPushConstant
+{
     friend class VulkanPushConstantManager;
+
+public:
+    VulkanPushConstant(size_t size, VkShaderStageFlags shaderStages);
+
 private:
     size_t size;
     VkShaderStageFlags shaderStages;
     void *data;
+
 public:
-    VulkanPushConstant(size_t size, VkShaderStageFlags shaderStages) : size(size), shaderStages(shaderStages) {
+    size_t getSize();
 
-    }
-    size_t getSize() {
-        return size;
-    }
+    VkShaderStageFlags getShaderStages();
 
-    VkShaderStageFlags getShaderStages() {
-        return shaderStages;
-    }
+    void *getData();
 
-    void *getData() {
-        return data;
-    }
-
-    void setData(void *data) {
-        VulkanPushConstant::data = data;
-    }
+    void setData(void *data);
 };

@@ -8,153 +8,27 @@
 #include "../VulkanDevice/VulkanDevice.h"
 #include "../../External/stb_image.h"
 
-
-class VulkanImage {
+class VulkanImage
+{
 public:
-    static VulkanImage *createImage(VulkanDevice *device, unsigned int width, unsigned int height) {
-        VkImage image;
-        device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                            image, true);
-        VkDeviceMemory imageMemory;
-        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
-        transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, width, height);
-    }
-    static VulkanImage* createImageWithFormat(VulkanDevice* device, unsigned int width, unsigned int height, VkFormat format){
-        VkImage image;
-        device->createImage(width, height, format, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                            image, true);
-        VkDeviceMemory imageMemory;
-        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
-        transitionImageLayout(device, image, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        return new VulkanImage(image, device, imageMemory, format, width, height);
+    static VulkanImage *createImage(VulkanDevice *device, unsigned int width, unsigned int height);
 
-    }
-    static VulkanImage *loadTexture(const char *pathToTexture, VulkanDevice *device) {
-        int imageWidth, imageHeight, imageChannels;
-        stbi_uc *imageData = stbi_load(pathToTexture, &imageWidth, &imageHeight, &imageChannels, STBI_rgb_alpha);
+    static VulkanImage *createImageWithFormat(VulkanDevice *device, unsigned int width, unsigned int height, VkFormat format);
 
-        VulkanImage *image = loadBinTexture(device, reinterpret_cast<const char *>(imageData), imageWidth, imageHeight,
-                                            imageChannels);
-        stbi_image_free(imageData);
-        return image;
-    }
+    static VulkanImage *loadTexture(const char *pathToTexture, VulkanDevice *device);
 
     static VulkanImage *loadBinTexture(VulkanDevice *device, const char *imageData, int imageWidth, int imageHeight,
-                                       int numChannelsAmount) {
-        VkDeviceSize imageSize = imageWidth * imageHeight * 4;
-
-        if (!imageData) {
-            throw std::runtime_error("failed to load texture image!");
-        }
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                             stagingBufferMemory);
-
-        void *data;
-        vkMapMemory(device->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-        memcpy(data, imageData, static_cast<size_t>(imageSize));
-        vkUnmapMemory(device->getDevice(), stagingBufferMemory);
-
-
-        VkImage image;
-        VkDeviceMemory imageMemory;
-        device->createImage(imageWidth, imageHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                            image, false);
-
-        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
-        transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        device->copyBufferToImage(stagingBuffer, image, imageWidth, imageHeight, 1);
-        transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        vkDestroyBuffer(device->getDevice(), stagingBuffer, nullptr);
-        vkFreeMemory(device->getDevice(), stagingBufferMemory, nullptr);
-
-        return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, imageWidth, imageHeight);
-    }
+                                       int numChannelsAmount);
 
     static void createImageMemory(VulkanDevice *device, VkMemoryPropertyFlags properties,
-                                  VkDeviceMemory &imageMemory, VkImage &image) {
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device->getDevice(), image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(device->getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate image memory!");
-        }
-
-        vkBindImageMemory(device->getDevice(), image, imageMemory, 0);
-    }
+                                  VkDeviceMemory &imageMemory, VkImage &image);
 
     static void transitionImageLayout(VulkanDevice *device, VkImage image, VkFormat format, VkImageLayout oldLayout,
-                                      VkImageLayout newLayout) {
-        VkCommandBuffer commandBuffer = device->beginSingleTimeCommands();
+                                      VkImageLayout newLayout);
 
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-                   newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else {
-            throw std::invalid_argument("unsupported layout transition!");
-        }
-
-        vkCmdPipelineBarrier(
-                commandBuffer,
-                sourceStage, destinationStage,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier
-        );
-
-        device->endSingleTimeCommands(commandBuffer);
-    }
-
+public:
+    VulkanImage(VkImage image, VulkanDevice *device,
+                VkDeviceMemory imageMemory, VkFormat format, int width, int height);
 
 private:
     VkImage image;
@@ -169,119 +43,29 @@ private:
     VkClearColorValue clearColorValue{};
     VkImageSubresourceRange imageSubresourceRange{};
 public:
-    VulkanImage(VkImage image, VulkanDevice *device,
-                VkDeviceMemory imageMemory, VkFormat format, int width, int height) : image(image),
-                                                                                      device(device),
-                                                                                      imageMemory(imageMemory),
-                                                                                      format(format),
-                                                                                      width(width),
-                                                                                      height(height) {
-        view = device->createImageView(image, format);
-    }
+    VkImage getImage();
 
-    VkImage getImage() {
-        return image;
-    }
+    VulkanDevice *getDevice();
 
-    VulkanDevice *getDevice() {
-        return device;
-    }
+    VkImageView getView();
 
-    VkImageView getView() {
-        return view;
-    }
+    void copyToImage(VulkanImage *target);
 
-    void copyToImage(VulkanImage *target) {
-        VkCommandBuffer cmd = device->beginSingleTimeCommands();
-        copyToImage(target, cmd);
-        device->endSingleTimeCommands(cmd);
-    }
-    void copyToImage(VulkanImage* target, VkCommandBuffer cmd){
-        imageCopyRegion = {};
-        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
-        imageCopyRegion.srcSubresource.layerCount = 1;
-        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
-        imageCopyRegion.dstSubresource.layerCount = 1;
-        imageCopyRegion.extent.width = width;
-        imageCopyRegion.extent.height = height;
-        imageCopyRegion.extent.depth = 1;
-        vkCmdCopyImage(
-                cmd,
-                this->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                target->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &imageCopyRegion);
-    }
-    void copyFromImage(VkImage image, VkCommandBuffer cmd){
-        imageCopyRegion = {};
-        imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
-        imageCopyRegion.srcSubresource.layerCount = 1;
-        imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT|VK_IMAGE_ASPECT_DEPTH_BIT;
-        imageCopyRegion.dstSubresource.layerCount = 1;
-        imageCopyRegion.extent.width = width;
-        imageCopyRegion.extent.height = height;
-        imageCopyRegion.extent.depth = 1;
-        vkCmdCopyImage(
-                cmd,
-                image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                this->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &imageCopyRegion);
-    }
+    void copyToImage(VulkanImage *target, VkCommandBuffer cmd);
 
-    void copyFromImage(VkImage image){
-        VkCommandBuffer cmd = device->beginSingleTimeCommands();
-        copyFromImage(image, cmd);
-        device->endSingleTimeCommands(cmd);
-    }
+    void copyFromImage(VkImage image, VkCommandBuffer cmd);
 
-    void clearImage(float r, float g, float b, float a){
-        VkCommandBuffer cmd = device->beginSingleTimeCommands();
-        clearImage(r,g,b,a,cmd);
-        device->endSingleTimeCommands(cmd);
-    }
+    void copyFromImage(VkImage image);
 
-    void clearImage(float r, float g, float b, float a, VkCommandBuffer cmd){
-        clearColorValue = {};
-        clearColorValue.float32[0] = r;
-        clearColorValue.float32[1] = g;
-        clearColorValue.float32[2] = b;
-        clearColorValue.float32[3] = a;
-        imageSubresourceRange = {};
-        imageSubresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageSubresourceRange.baseMipLevel   = 0;
-        imageSubresourceRange.levelCount     = 1;
-        imageSubresourceRange.baseArrayLayer = 0;
-        imageSubresourceRange.layerCount     = 1;
-        vkCmdClearColorImage(cmd, this->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,&clearColorValue, 1, &imageSubresourceRange);
-    }
+    void clearImage(float r, float g, float b, float a);
 
-    VkFormat getFormat() {
-        return format;
-    }
-    void resize(int width, int height){
-        destroy();
-        destroyed = false;
-        device->createImage(width, height, this->format, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                            image, true);
-        createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
-        transitionImageLayout(device, image, this->format, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        view = device->createImageView(image, this->format);
-    }
-    void destroy() {
-        if (!destroyed) {
-            vkDestroyImageView(device->getDevice(), view, nullptr);
-            if (imageMemory != VK_NULL_HANDLE) {
-                vkFreeMemory(device->getDevice(), imageMemory, nullptr);
-            }
-            vkDestroyImage(device->getDevice(), image, nullptr);
-            destroyed = true;
-        }
-    }
+    void clearImage(float r, float g, float b, float a, VkCommandBuffer cmd);
 
-    ~VulkanImage() {
-        destroy();
-    }
+    VkFormat getFormat();
+    
+    void resize(int width, int height);
+
+    void destroy();
+
+    ~VulkanImage();
 };

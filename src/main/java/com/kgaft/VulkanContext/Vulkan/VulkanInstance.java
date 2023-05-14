@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan;
 
+import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
@@ -8,7 +9,6 @@ import static org.lwjgl.vulkan.VK13.*;
 
 import org.lwjgl.vulkan.*;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 

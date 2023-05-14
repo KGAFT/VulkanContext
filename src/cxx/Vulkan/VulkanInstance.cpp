@@ -22,6 +22,7 @@ bool VulkanInstance::createInstance(const char *appName, bool enableLogging, std
     if (enableLogging)
     {
         VulkanLogger::describeLogger(debugCreateInfo, &createInfo);
+        createInfo.pNext = &debugCreateInfo;
     }
     else
     {

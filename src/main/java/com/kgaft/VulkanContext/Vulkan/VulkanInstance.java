@@ -59,4 +59,7 @@ public class VulkanInstance {
         return result;
     }
 
+    public VkInstance getInstance() {
+        return instance;
+    }
 }

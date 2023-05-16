@@ -3,6 +3,7 @@ package com.kgaft.VulkanContext;
 
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability;
+import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.DefaultVulkanLoggerCallback;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import com.kgaft.Window.*;
@@ -31,16 +32,13 @@ public class Main {
             glfwExtensions.add(glfwExts.getStringUTF8());
         }
 
-        System.out.print(instance.createInstance("MyApp", "MyEngine", true, glfwExtensions));
-        int[] deviceCount = new int[1];
-        vkEnumeratePhysicalDevices(instance.getInstance(), deviceCount, null);
-        MemoryStack stack = MemoryStack.stackPush();
-        PointerBuffer pBuffer = stack.callocPointer(deviceCount[0]);
-        vkEnumeratePhysicalDevices(instance.getInstance(), deviceCount, pBuffer);
-        VkPhysicalDevice device = new VkPhysicalDevice(pBuffer.get(), instance.getInstance());
+        System.out.println(instance.createInstance("MyApp", "MyEngine", true, glfwExtensions));
+        
         
         Window window = Window.getWindow();
         long windowSurface = window.getSurface(instance.getInstance());   
-        System.out.println(DeviceSuitability.isDeviceSuitable(device, windowSurface));
+        VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
+        VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
+        System.out.println("True");
     }
 }

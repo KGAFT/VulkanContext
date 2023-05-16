@@ -56,6 +56,7 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
     private long handle;
     private VkInstance vkInstance;
     private ArrayList<IVulkanLoggerCallback> callbacks = new ArrayList<>();
+    
     private VulkanLogger(){
 
     }

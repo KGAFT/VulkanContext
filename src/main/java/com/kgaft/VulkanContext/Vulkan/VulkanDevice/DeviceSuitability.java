@@ -17,8 +17,8 @@ class SwapChainSupportDetails{
 }
 
 class QueueFamilyIndices{
-    public long graphicsFamily;
-    public long presentFamily;
+    public int graphicsFamily;
+    public int presentFamily;
     public boolean graphicsFamilyHasValue = false;
     public boolean presentFamilyHasValue = false;
 
@@ -78,6 +78,9 @@ public class DeviceSuitability {
             return result;
         }
     }
+
+    
+
     public static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, long surface){
         SwapChainSupportDetails supportDetails = new SwapChainSupportDetails();
         supportDetails.capabilities = VkSurfaceCapabilitiesKHR.calloc();
@@ -114,5 +117,8 @@ public class DeviceSuitability {
                 supportedFeatures.samplerAnisotropy();
         supportedFeatures.free();
         return result;
+    }
+    public static ArrayList<String> getRequiredDeviceExtensions() {
+        return requiredDeviceExtensions;
     }
 }

@@ -59,6 +59,102 @@ public class VulkanDevice {
         createLogicalDevice(debugDevice);
         createCommandPool();
     }
+    
+    /**
+     * 
+     * @return VkBuffer at index 0. VkBufferMemory at index 1.
+     */
+
+    public long[] createBuffer(long size, int usageFlags, int memoryPropertyFlags){
+        long[] result = new long[2];
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            VkBufferCreateInfo createInfo = VkBufferCreateInfo.calloc(stack);
+            createInfo.sType$Default();
+            createInfo.size(size);
+            createInfo.usage(usageFlags);
+            createInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            long[] tempRes = new long[1];
+            if(vkCreateBuffer(device, createInfo, null, tempRes)!=VK_SUCCESS){
+                throw new RuntimeException("Failed to create buffer");
+            }
+            result[0] = tempRes[0];
+            VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
+            vkGetBufferMemoryRequirements(device, tempRes[0], memRequirements);
+
+            VkMemoryAllocateInfo allocateInfo = VkMemoryAllocateInfo.calloc(stack);
+            allocateInfo.sType$Default();
+            allocateInfo.allocationSize(memRequirements.size());
+            allocateInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), memoryPropertyFlags, stack));
+            tempRes[0] = 0;
+            if(vkAllocateMemory(device, allocateInfo, null, tempRes)!=VK_SUCCESS){
+                throw new RuntimeException("Failed to allocate memory for buffer");
+            }
+            result[1] = tempRes[0];
+            return result;
+        }
+    }
+
+    public int findMemoryType(int typeFilter, int properties, MemoryStack stack){
+        VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
+        vkGetPhysicalDeviceMemoryProperties(deviceToCreate, memProperties);
+        for(int i = 0; i<memProperties.memoryTypeCount(); i++){
+            if((typeFilter & (int)(1 << i))>0 &&(memProperties.memoryTypes(i).propertyFlags()&properties)==properties){
+                return i;
+            }
+        }
+        throw new RuntimeException("Failed to find suitable memory type");
+    }
+
+    public void copyBuffer(long srcBuffer, long dstBuffer, long size){
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
+            copyRegion.srcOffset(0); // Optional
+            copyRegion.dstOffset(0); // Optional
+            copyRegion.size(size);
+            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
+            endSingleTimeCommands(commandBuffer);
+        }
+        
+        
+    }
+
+    public VkCommandBuffer beginSingleTimeCommands() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
+            allocInfo.sType$Default();
+            allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+            allocInfo.commandPool(commandPool);
+            allocInfo.commandBufferCount(1);
+            
+            PointerBuffer tempRes = stack.callocPointer(1);
+            vkAllocateCommandBuffers(device, allocInfo, tempRes);
+            VkCommandBuffer result = new VkCommandBuffer(tempRes.get(), device);
+
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
+            beginInfo.sType$Default();
+            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            vkBeginCommandBuffer(result, beginInfo);
+            return result;
+        }
+    }
+
+    public void endSingleTimeCommands(VkCommandBuffer cmd){
+        vkEndCommandBuffer(cmd);
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.calloc(1, stack);
+            submitInfo.sType$Default();
+            PointerBuffer pBuffer = stack.callocPointer(1);
+            pBuffer.put(cmd.address());
+            pBuffer.rewind();
+            submitInfo.pCommandBuffers(pBuffer);
+            vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(graphicsQueue);
+
+            vkFreeCommandBuffers(device, commandPool, pBuffer);
+        }
+        
+    }
 
     private void createLogicalDevice(boolean enableLog) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -134,38 +230,5 @@ public class VulkanDevice {
         }
     }
 
-    VkCommandBuffer beginSingleTimeCommands() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
-            allocInfo.sType$Default();
-            allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-            allocInfo.commandPool(commandPool);
-            allocInfo.commandBufferCount(1);
-            
-            PointerBuffer tempRes = stack.callocPointer(1);
-            vkAllocateCommandBuffers(device, allocInfo, tempRes);
-            VkCommandBuffer result = new VkCommandBuffer(tempRes.get(), device);
-
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
-            beginInfo.sType$Default();
-            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            vkBeginCommandBuffer(result, beginInfo);
-            return result;
-        }
-    }
-
-    void endSingleTimeCommands(VkCommandBuffer cmd){
-        vkEndCommandBuffer(cmd);
-        try(MemoryStack stack = MemoryStack.stackPush()){
-            VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.calloc(1, stack);
-            Vk
-            submitInfo.sType$Default();
-            submitInfo.pCommandBuffers(cmd);
-            vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(graphicsQueue);
-
-            vkFreeCommandBuffer(device, commandPool, cmd);
-        }
-        
-    }
+    
 }

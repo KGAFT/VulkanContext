@@ -94,6 +94,50 @@ public class VulkanDevice {
         }
     }
 
+    public long createImage(int width, int height, int format, int tiling, int usage, boolean isFrameBuffer){
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            VkImageCreateInfo createInfo = VkImageCreateInfo.calloc(stack);
+            createInfo.sType$Default();
+            createInfo.imageType(VK_IMAGE_TYPE_2D);
+            createInfo.extent().width(width);
+            createInfo.extent().height(height);
+            createInfo.extent().depth(1);
+            createInfo.mipLevels(1);
+            createInfo.arrayLayers(1);
+            createInfo.format(format);
+            createInfo.tiling(tiling);
+            createInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            createInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+            createInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            long[] result = new long[1];
+            if(vkCreateImage(device, createInfo, null, result)!=VK_SUCCESS){
+                throw new RuntimeException("Failed to create image");
+            }
+            return result[0];
+        }
+    }
+
+    public long createImageView(long image, int format){
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
+            viewInfo.sType$Default();
+            viewInfo.image(image);
+            viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
+            viewInfo.format(format);
+            viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            viewInfo.subresourceRange().baseMipLevel(0);
+            viewInfo.subresourceRange().levelCount(1);
+            viewInfo.subresourceRange().baseArrayLayer(0);
+            viewInfo.subresourceRange().layerCount(1);
+
+            long[] result = new long[1];
+            if(vkCreateImageView(device, viewInfo, null, result)!=VK_SUCCESS){
+                throw new RuntimeException("Failed to create image view");
+            }
+            return result[0];
+        }
+    }
+
     public int findMemoryType(int typeFilter, int properties, MemoryStack stack){
         VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
         vkGetPhysicalDeviceMemoryProperties(deviceToCreate, memProperties);

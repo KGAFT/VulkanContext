@@ -9,7 +9,7 @@ import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import com.kgaft.Window.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-
+import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.glfw.GLFWVulkan;
 import java.util.ArrayList;
@@ -39,6 +39,7 @@ public class Main {
         long windowSurface = window.getSurface(instance.getInstance());   
         VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
         VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
+        
         System.out.println("True");
     }
 }

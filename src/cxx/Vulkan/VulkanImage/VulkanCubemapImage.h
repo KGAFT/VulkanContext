@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../External/stb_image.h"
+#include "External/stb/stb_image.h"
 #include "../VulkanDevice/VulkanDevice.h"
 #include "VulkanImage.h"
 #include <cstdint>

@@ -6,7 +6,7 @@
 #include <cstring>
 #include <vulkan/vulkan.h>
 #include "../VulkanDevice/VulkanDevice.h"
-#include "../../External/stb_image.h"
+#include "External/stb/stb_image.h"
 
 class VulkanImage
 {

@@ -83,6 +83,8 @@ public:
 
     std::vector<VulkanPushConstant *> &getPushConstants();
 
+    VulkanGraphicsPipeline *getGraphicsPipeline();
+
 private:
     const unsigned int prepareClearValues(VkClearValue *result) const;
 

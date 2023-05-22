@@ -88,3 +88,7 @@ void VulkanGraphicsPipeline::create()
         throw std::runtime_error("failed to create graphics pipeline");
     }
 }
+
+VulkanRenderPass *VulkanGraphicsPipeline::getRenderPass()  {
+    return renderPass;
+}

@@ -212,3 +212,7 @@ void VulkanEndRenderPipeline::createControl()
 {
     control = new VulkanRenderPipelineControl(syncManager, device, renderPass);
 }
+
+VulkanGraphicsPipeline *VulkanEndRenderPipeline::getGraphicsPipeline() {
+    return graphicsPipeline;
+}

@@ -33,6 +33,10 @@ public:
 
     void destroy();
 
+    VulkanRenderPass *getRenderPass();
+
+
+
 private:
     void create();
 };

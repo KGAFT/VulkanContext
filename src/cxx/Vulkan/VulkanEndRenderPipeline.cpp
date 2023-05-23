@@ -76,6 +76,10 @@ VkPipelineLayout VulkanEndRenderPipeline::getPipelineLayout()
 
 void VulkanEndRenderPipeline::endRender()
 {
+    if(uiInstance!=nullptr){
+        uiInstance->populateCommandBuffer(currentCommandBuffer);
+    }
+
     vkCmdEndRenderPass(currentCommandBuffer);
 
     control->endRender();
@@ -153,6 +157,9 @@ void VulkanEndRenderPipeline::destroy()
         }
         delete control;
         delete graphicsPipeline;
+        if(uiInstance!=nullptr){
+            delete uiInstance;
+        }
         delete renderPass;
         delete configurer;
         destroyed = true;
@@ -215,4 +222,8 @@ void VulkanEndRenderPipeline::createControl()
 
 VulkanGraphicsPipeline *VulkanEndRenderPipeline::getGraphicsPipeline() {
     return graphicsPipeline;
+}
+
+void VulkanEndRenderPipeline::initIMGUI(GLFWwindow *window) {
+    uiInstance = ImGUIVulkan::initializeForVulkan(device,renderPass->getRenderPass(), window);
 }

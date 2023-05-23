@@ -17,6 +17,7 @@
 #include "VulkanRenderingPipeline/VulkanRenderPipelineControl.h"
 #include "VulkanDescriptors/VulkanDescriptors.h"
 #include "VulkanImmediateShaderData/PushConstants/VulkanPushConstantManager.h"
+#include "ImGUIVulkan/ImGUIVulkan.h"
 
 class VulkanEndRenderPipeline
 {
@@ -43,7 +44,7 @@ private:
 
     int imagePerStepAmount = 0;
     VkFormat imageFormat;
-
+    ImGUIVulkan* uiInstance = nullptr;
     VkRenderPassBeginInfo renderPassInfo{};
     float clearColorValues[4] = {0, 0, 0, 1};
     VkCommandBuffer currentCommandBuffer;
@@ -85,6 +86,7 @@ public:
 
     VulkanGraphicsPipeline *getGraphicsPipeline();
 
+    void initIMGUI(GLFWwindow* window);
 private:
     const unsigned int prepareClearValues(VkClearValue *result) const;
 

@@ -1,8 +1,7 @@
 #include "PipelineImmediateConfig.h"
 
- PipelineConfiguration::PipelineConfigInfo PipelineConfiguration::defaultPipelineConfigInfo(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending)
+ void PipelineConfiguration::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending)
     {
-        PipelineConfigInfo configInfo{};
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -32,7 +31,8 @@
         configInfo.multisampleInfo.pSampleMask = nullptr;            // Optional
         configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE; // Optional
         configInfo.multisampleInfo.alphaToOneEnable = VK_FALSE;
-        configInfo.colorBlendAttachments.resize(attachmentCount);// Optional
+        configInfo.colorBlendAttachments.clear();
+        configInfo.colorBlendAttachments.resize(attachmentCount);
         if(alphaBlending){
 
             for (int i = 0; i < attachmentCount; ++i){
@@ -83,5 +83,4 @@
         configInfo.depthStencilInfo.stencilTestEnable = VK_FALSE;
         configInfo.depthStencilInfo.front = {};
         configInfo.depthStencilInfo.back = {};
-        return configInfo;
     }

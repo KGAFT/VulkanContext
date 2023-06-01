@@ -8,17 +8,19 @@
 
 class VulkanGraphicsPipeline
 {
+private:
+    static PipelineConfiguration::PipelineConfigInfo configInfo;
 public:
     VulkanGraphicsPipeline(VulkanDevice *device,
                            GraphicsPipelineConfigurer *configurer, VulkanShader *shader,
-                           PipelineConfiguration::PipelineConfigInfo configInfo, VulkanRenderPass *renderPass);
+                           unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass);
 
 private:
     VkPipeline graphicsPipeline;
     VulkanDevice *device;
     GraphicsPipelineConfigurer *configurer;
     VulkanShader *shader;
-    PipelineConfiguration::PipelineConfigInfo configInfo;
+
     VulkanRenderPass *renderPass;
     bool destroyed = false;
 
@@ -29,7 +31,7 @@ public:
 
     ~VulkanGraphicsPipeline();
 
-    void recreate(PipelineConfiguration::PipelineConfigInfo configInfo, VulkanRenderPass *renderPass);
+    void recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass);
 
     void destroy();
 

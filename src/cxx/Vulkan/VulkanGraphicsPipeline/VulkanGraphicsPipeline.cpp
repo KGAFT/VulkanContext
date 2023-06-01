@@ -1,11 +1,14 @@
 #include "VulkanGraphicsPipeline.h"
 
+
+PipelineConfiguration::PipelineConfigInfo VulkanGraphicsPipeline::configInfo = {};
+
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice *device,
                                                GraphicsPipelineConfigurer *configurer, VulkanShader *shader,
-                                               PipelineConfiguration::PipelineConfigInfo configInfo, VulkanRenderPass *renderPass)
-    : device(device), configurer(configurer), shader(shader),
-      configInfo(configInfo), renderPass(renderPass)
+                                               unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass)
+    : device(device), configurer(configurer), shader(shader), renderPass(renderPass)
 {
+    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending);
     create();
 }
 
@@ -24,12 +27,12 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     destroy();
 }
 
-void VulkanGraphicsPipeline::recreate(PipelineConfiguration::PipelineConfigInfo configInfo, VulkanRenderPass *renderPass)
+void VulkanGraphicsPipeline::recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass)
 {
-    this->configInfo = configInfo;
     this->renderPass = renderPass;
     destroy();
     destroyed = false;
+    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending);
     create();
 }
 

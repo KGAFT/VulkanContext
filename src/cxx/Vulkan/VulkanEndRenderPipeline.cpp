@@ -110,7 +110,7 @@ void VulkanEndRenderPipeline::resized(int width, int height, std::vector<VkImage
     }
     renderPass->recreate(imageViews, width, height, this->imagePerStepAmount, &this->imageFormat, 1);
     graphicsPipeline->recreate(
-        PipelineConfiguration::defaultPipelineConfigInfo(width, height, renderPass->getAttachmentCount(), alphaBlendEnabled),
+        width, height, renderPass->getAttachmentCount(), alphaBlendEnabled,
         renderPass);
     control->setRenderPass(renderPass);
 }
@@ -210,8 +210,8 @@ void VulkanEndRenderPipeline::createGraphicsPipeline(PipelineEndConfig *endConfi
 {
     configurer = new GraphicsPipelineConfigurer(device, endConfig);
     graphicsPipeline = new VulkanGraphicsPipeline(device, configurer, shader,
-                                                  PipelineConfiguration::defaultPipelineConfigInfo(width, height,
-                                                                                                   renderPass->getAttachmentCount(), alphaBlending),
+                                                  width, height,
+                                                  renderPass->getAttachmentCount(), alphaBlending,
                                                   renderPass);
 }
 

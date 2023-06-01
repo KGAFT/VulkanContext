@@ -19,5 +19,5 @@ namespace PipelineConfiguration
         uint32_t subpass = 0;
     };
 
-    PipelineConfigInfo defaultPipelineConfigInfo(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending);
+    void defaultPipelineConfigInfo(PipelineConfigInfo& output, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending);
 }

@@ -74,7 +74,7 @@ VkPipelineLayout VulkanEndRenderPipeline::getPipelineLayout()
     return configurer->getPipelineLayout();
 }
 
-void VulkanEndRenderPipeline::endRender()
+void VulkanEndRenderPipeline::endRenderPass()
 {
     if(uiInstance!=nullptr){
         uiInstance->populateCommandBuffer(currentCommandBuffer);
@@ -82,8 +82,13 @@ void VulkanEndRenderPipeline::endRender()
 
     vkCmdEndRenderPass(currentCommandBuffer);
 
+
+}
+
+void VulkanEndRenderPipeline::endRender() {
     control->endRender();
 }
+
 
 void VulkanEndRenderPipeline::resized(int width, int height, std::vector<VkImageView> &newImageViews, int imagePerStepAmount,
                                       VkFormat imageFormat)
@@ -227,3 +232,4 @@ VulkanGraphicsPipeline *VulkanEndRenderPipeline::getGraphicsPipeline() {
 void VulkanEndRenderPipeline::initIMGUI(GLFWwindow *window) {
     uiInstance = ImGUIVulkan::initializeForVulkan(device,renderPass->getRenderPass(), window);
 }
+

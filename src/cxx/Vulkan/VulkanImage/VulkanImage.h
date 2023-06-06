@@ -28,7 +28,7 @@ public:
 
 public:
     VulkanImage(VkImage image, VulkanDevice *device,
-                VkDeviceMemory imageMemory, VkFormat format, int width, int height);
+                VkDeviceMemory imageMemory, VkFormat format, VkImageLayout imageLayout, int width, int height);
 
 private:
     VkImage image;
@@ -36,6 +36,7 @@ private:
     VkImageView view;
     VkDeviceMemory imageMemory = VK_NULL_HANDLE;
     VkFormat format;
+    VkImageLayout imageLayout;
     int width;
     int height;
     bool destroyed = false;
@@ -53,9 +54,9 @@ public:
 
     void copyToImage(VulkanImage *target, VkCommandBuffer cmd);
 
-    void copyFromImage(VkImage image, VkCommandBuffer cmd);
+    void copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd);
 
-    void copyFromImage(VkImage image);
+    void copyFromImage(VkImage image, VkImageLayout imageLayout);
 
     void clearImage(float r, float g, float b, float a);
 

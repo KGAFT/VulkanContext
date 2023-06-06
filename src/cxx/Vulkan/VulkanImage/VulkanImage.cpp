@@ -10,7 +10,7 @@ VulkanImage *VulkanImage::createImage(VulkanDevice *device, unsigned int width, 
     createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
     transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, width, height);
+    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, width, height);
 }
 
 VulkanImage *VulkanImage::createImageWithFormat(VulkanDevice *device, unsigned int width, unsigned int height, VkFormat format)
@@ -23,7 +23,7 @@ VulkanImage *VulkanImage::createImageWithFormat(VulkanDevice *device, unsigned i
     createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
     transitionImageLayout(device, image, format, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    return new VulkanImage(image, device, imageMemory, format, width, height);
+    return new VulkanImage(image, device, imageMemory, format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, width, height);
 }
 
 VulkanImage *VulkanImage::loadTexture(const char *pathToTexture, VulkanDevice *device)
@@ -74,7 +74,7 @@ VulkanImage *VulkanImage::loadBinTexture(VulkanDevice *device, const char *image
     vkDestroyBuffer(device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(device->getDevice(), stagingBufferMemory, nullptr);
 
-    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, imageWidth, imageHeight);
+    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageWidth, imageHeight);
 }
 
 void VulkanImage::createImageMemory(VulkanDevice *device, VkMemoryPropertyFlags properties,
@@ -159,12 +159,13 @@ void VulkanImage::transitionImageLayout(VulkanDevice *device, VkImage image, VkF
 }
 
 VulkanImage::VulkanImage(VkImage image, VulkanDevice *device,
-                         VkDeviceMemory imageMemory, VkFormat format, int width, int height) : image(image),
+                         VkDeviceMemory imageMemory, VkFormat format, VkImageLayout imageLayout, int width, int height) : image(image),
                                                                                                device(device),
                                                                                                imageMemory(imageMemory),
                                                                                                format(format),
                                                                                                width(width),
-                                                                                               height(height)
+                                                                                               height(height),
+                                                                                               imageLayout(imageLayout)
 {
     view = device->createImageView(image, format);
 }
@@ -203,13 +204,13 @@ void VulkanImage::copyToImage(VulkanImage *target, VkCommandBuffer cmd)
     imageCopyRegion.extent.depth = 1;
     vkCmdCopyImage(
         cmd,
-        this->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        target->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        this->image, this->imageLayout,
+        target->image, target->imageLayout,
         1,
         &imageCopyRegion);
 }
 
-void VulkanImage::copyFromImage(VkImage image, VkCommandBuffer cmd)
+void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd)
 {
     imageCopyRegion = {};
     imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -221,16 +222,16 @@ void VulkanImage::copyFromImage(VkImage image, VkCommandBuffer cmd)
     imageCopyRegion.extent.depth = 1;
     vkCmdCopyImage(
         cmd,
-        image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        this->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        image, imageLayout,
+        this->image, this->imageLayout,
         1,
         &imageCopyRegion);
 }
 
-void VulkanImage::copyFromImage(VkImage image)
+void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout)
 {
     VkCommandBuffer cmd = device->beginSingleTimeCommands();
-    copyFromImage(image, cmd);
+    copyFromImage(image, imageLayout, cmd);
     device->endSingleTimeCommands(cmd);
 }
 
@@ -254,7 +255,7 @@ void VulkanImage::clearImage(float r, float g, float b, float a, VkCommandBuffer
     imageSubresourceRange.levelCount = 1;
     imageSubresourceRange.baseArrayLayer = 0;
     imageSubresourceRange.layerCount = 1;
-    vkCmdClearColorImage(cmd, this->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &clearColorValue, 1, &imageSubresourceRange);
+    vkCmdClearColorImage(cmd, this->image, this->imageLayout, &clearColorValue, 1, &imageSubresourceRange);
 }
 
 VkFormat VulkanImage::getFormat()

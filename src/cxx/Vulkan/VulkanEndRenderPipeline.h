@@ -65,6 +65,8 @@ public:
 
     VkPipelineLayout getPipelineLayout();
 
+    void endRenderPass();
+
     void endRender();
 
     void resized(int width, int height, std::vector<VkImageView> &newImageViews, int imagePerStepAmount,

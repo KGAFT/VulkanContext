@@ -65,3 +65,15 @@ void VulkanSampler::createTextureSampler()
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
+
+void VulkanSampler::destroy() {
+    if(!destroyed){
+        vkDestroySampler(device->getDevice(), sampler, nullptr);
+    }
+    destroyed = true;
+}
+
+VulkanSampler::~VulkanSampler() {
+    destroy();
+
+}

@@ -17,7 +17,7 @@ private:
     VkImageView samplerImageView = nullptr;
     VulkanDevice *device;
     unsigned int binding;
-
+    bool destroyed = false;
 public:
     void setSamplerImageView(VkImageView samplerImageView);
 
@@ -32,6 +32,10 @@ public:
     VkBuffer getBuffer(unsigned int currentInstance) override;
 
     size_t getBufferSize() override;
+
+    void destroy();
+
+    ~VulkanSampler();
 
 private:
     void createTextureSampler();

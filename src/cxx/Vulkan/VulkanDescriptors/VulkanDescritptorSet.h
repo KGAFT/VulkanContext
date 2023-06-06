@@ -22,6 +22,7 @@ private:
     VulkanDevice *device;
     void *attachInstance = nullptr;
     void initImmediate(PipelineEndConfig *endConfig);
+    bool destroyed = false;
 
 public:
     void updateDescriptorSet(unsigned int currentDescriptor);

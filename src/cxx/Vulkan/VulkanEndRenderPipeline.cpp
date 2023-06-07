@@ -12,7 +12,6 @@ VulkanEndRenderPipeline::VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyn
         this->imageViews.push_back(item);
     }
     createRenderPass(startFrameBufferWidth, startFrameBufferHeight, imagePerStepAmount, imageFormat);
-    this->alphaBlendEnabled = endConfig->alphaBlend;
     createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight, alphaBlendEnabled);
     createControl();
     if (configurer->getDescriptorSetLayout() != VK_NULL_HANDLE)

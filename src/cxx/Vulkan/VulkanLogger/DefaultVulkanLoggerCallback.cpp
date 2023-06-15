@@ -16,7 +16,7 @@ void DefaultVulkanLoggerCallback::translatedMessage(const char *severity, const 
     auto time = std::chrono::system_clock::to_time_t(currentTime);
     std::string outputTime = std::string(ctime(&time));
     outputTime[outputTime.size() - 1] = '\0';
-    std::string outputMessage = outputTime + "VULKAN " + " [" + severity + "] " + type + " " + message;
+    std::string outputMessage = outputTime + " VULKAN " + " [" + severity + "] " + type + " " + message;
     std::string severityS = severity;
     if (!severityS.compare("ERROR"))
     {

@@ -140,21 +140,20 @@ bool VulkanLogger::init(VkInstance instance)
 
 void VulkanLogger::registerCallback(IVulkanLoggerCallback *callback)
 {
-    if (debugMessenger != NULL)
+    
+    switch (callback->getCallBackMode())
     {
-        switch (callback->getCallBackMode())
-        {
-        case RAW_VULKAN_DEFS:
-            rawCallbacks.push_back(callback);
-            break;
-        case TRANSLATED_DEFS:
-            translatedCallbacks.push_back(callback);
-            break;
-        case BOTH_DEFS:
-            bothCallbacks.push_back(callback);
-            break;
-        }
+    case RAW_VULKAN_DEFS:
+        rawCallbacks.push_back(callback);
+        break;
+    case TRANSLATED_DEFS:
+        translatedCallbacks.push_back(callback);
+        break;
+    case BOTH_DEFS:
+        bothCallbacks.push_back(callback);
+        break;
     }
+    
 }
 
 void VulkanLogger::removeCallback(IVulkanLoggerCallback *callback)

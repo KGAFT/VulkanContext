@@ -5,10 +5,10 @@ PipelineConfiguration::PipelineConfigInfo VulkanGraphicsPipeline::configInfo = {
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice *device,
                                                GraphicsPipelineConfigurer *configurer, VulkanShader *shader,
-                                               unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass)
+                                               unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VulkanRenderPass *renderPass)
     : device(device), configurer(configurer), shader(shader), renderPass(renderPass)
 {
-    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending);
+    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending, culling);
     create();
 }
 
@@ -27,12 +27,12 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     destroy();
 }
 
-void VulkanGraphicsPipeline::recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VulkanRenderPass *renderPass)
+void VulkanGraphicsPipeline::recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VulkanRenderPass *renderPass)
 {
     this->renderPass = renderPass;
     destroy();
     destroyed = false;
-    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending);
+    PipelineConfiguration::defaultPipelineConfigInfo(VulkanGraphicsPipeline::configInfo, width, height, attachmentCount, alphaBlending, culling);
     create();
 }
 

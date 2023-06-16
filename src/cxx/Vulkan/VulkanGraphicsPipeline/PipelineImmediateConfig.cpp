@@ -1,6 +1,6 @@
 #include "PipelineImmediateConfig.h"
 
- void PipelineConfiguration::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending)
+ void PipelineConfiguration::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling)
     {
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -18,7 +18,7 @@
         configInfo.rasterizationInfo.rasterizerDiscardEnable = VK_FALSE;
         configInfo.rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;
         configInfo.rasterizationInfo.lineWidth = 1.0f;
-        configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
+        configInfo.rasterizationInfo.cullMode = culling;
         configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
         configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
         configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f; // Optional

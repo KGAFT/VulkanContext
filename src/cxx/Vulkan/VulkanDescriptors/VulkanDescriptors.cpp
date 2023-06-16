@@ -1,6 +1,6 @@
 #include "VulkanDescriptors.h"
 
-VulkanDescriptors::VulkanDescriptors(VulkanDevice *device, PipelineEndConfig *endConfig, VkDescriptorSetLayout layout, unsigned int instanceCount) : layout(layout), instanceCount(instanceCount), endConfig(endConfig)
+VulkanDescriptors::VulkanDescriptors(VulkanDevice *device, PipelineEndConfig *endConfig, VkDescriptorSetLayout layout, unsigned int instanceCount) : layout(layout), instanceCount(instanceCount), endConfig(*endConfig)
 {
     this->device = device;
     std::vector<VkDescriptorPoolSize> sizes;
@@ -61,7 +61,7 @@ VulkanDescriptorSet *VulkanDescriptors::acquireDescriptorSet()
         }
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
-    descriptorSet->initImmediate(endConfig);
+    descriptorSet->initImmediate(&endConfig);
     existingDescriptorSets.push_back(descriptorSet);
     return descriptorSet;
 }

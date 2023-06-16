@@ -20,7 +20,7 @@ private:
     VkDescriptorSetLayout layout;
     unsigned int instanceCount;
     std::vector<VulkanDescriptorSet *> existingDescriptorSets;
-    PipelineEndConfig *endConfig;
+    PipelineEndConfig endConfig;
 
 public:
     

@@ -1,4 +1,3 @@
-
 package com.kgaft.VulkanContext.Vulkan;
 
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.DeviceSuitability;
@@ -14,6 +13,7 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK13.*;
 
 public class VulkanSwapChain {
+
     private List<Long> swapChainImages = new ArrayList<>();
     private List<Long> swapChainImageViews = new ArrayList<>();
     private int width;
@@ -22,8 +22,8 @@ public class VulkanSwapChain {
     private long swapChain;
     private int swapChainImageFormat;
     private VkExtent2D swapChainExtent;
-    
-    public VulkanSwapChain(VulkanDevice device, int width, int height){
+
+    public VulkanSwapChain(VulkanDevice device, int width, int height) {
         this.device = device;
         this.width = width;
         this.height = height;
@@ -31,8 +31,8 @@ public class VulkanSwapChain {
         createImageViews();
     }
 
-    public void destroy(){
-        for(long view : swapChainImageViews){
+    public void destroy() {
+        for (long view : swapChainImageViews) {
             vkDestroyImageView(device.getDevice(), view, null);
         }
         swapChainImageViews.clear();
@@ -40,44 +40,43 @@ public class VulkanSwapChain {
         swapChain = 0;
         swapChainImages.clear();
     }
-    
-    public void recreate(int width, int height){
+
+    public void recreate(int width, int height) {
         this.width = width;
         this.height = height;
         destroy();
         createSwapChain();
         createImageViews();
     }
-    
-    private void createSwapChain(){
-        try(MemoryStack stack = MemoryStack.stackPush()){
+
+    private void createSwapChain() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             SwapChainSupportDetails details = DeviceSuitability.querySwapChainSupport(device.getDeviceToCreate(), device.getRenderSurface());
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(details.formats);
             int presentMode = chooseSwapPresentMode(details.presentModes);
             VkExtent2D extent = chooseSwapExtent(details.capabilities);
-            int imageCount = details.capabilities.minImageCount()+1;
-            if(details.capabilities.maxImageCount()>0 && imageCount>details.capabilities.maxImageCount()){
+            int imageCount = details.capabilities.minImageCount() + 1;
+            if (details.capabilities.maxImageCount() > 0 && imageCount > details.capabilities.maxImageCount()) {
                 imageCount = details.capabilities.maxImageCount();
             }
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.calloc(stack);
             createInfo.sType$Default();
             createInfo.surface(device.getRenderSurface());
-            
+
             createInfo.minImageCount(imageCount);
             createInfo.imageFormat(surfaceFormat.format());
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-            
+
             QueueFamilyIndices indices = DeviceSuitability.findQueueFamilies(device.getDeviceToCreate(), device.getRenderSurface());
-            if(indices.graphicsFamily!=indices.presentFamily){
+            if (indices.graphicsFamily != indices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
                 createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
-            }
-            else{
+            } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
-             
+
             }
             createInfo.preTransform(details.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
@@ -85,7 +84,7 @@ public class VulkanSwapChain {
             createInfo.clipped(true);
             createInfo.oldSwapchain(VK_NULL_HANDLE);
             long[] res = new long[1];
-            if(KHRSwapchain.vkCreateSwapchainKHR(device.getDevice(), createInfo, null, res)!=VK_SUCCESS){
+            if (KHRSwapchain.vkCreateSwapchainKHR(device.getDevice(), createInfo, null, res) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create swap chain");
             }
             this.swapChain = res[0];
@@ -93,17 +92,17 @@ public class VulkanSwapChain {
             KHRSwapchain.vkGetSwapchainImagesKHR(device.getDevice(), swapChain, swImageCount, null);
             long[] swImages = new long[swImageCount[0]];
             KHRSwapchain.vkGetSwapchainImagesKHR(device.getDevice(), swapChain, swImageCount, swImages);
-            for(long image : swImages){
+            for (long image : swImages) {
                 swapChainImages.add(image);
             }
             this.swapChainImageFormat = surfaceFormat.format();
             this.swapChainExtent = extent;
         }
     }
-    
-    private void createImageViews(){
-        try(MemoryStack stack = MemoryStack.stackPush()){
-            swapChainImages.forEach(image->{
+
+    private void createImageViews() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            swapChainImages.forEach(image -> {
                 VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
                 viewInfo.sType$Default();
                 viewInfo.image(image);
@@ -115,60 +114,59 @@ public class VulkanSwapChain {
                 viewInfo.subresourceRange().baseArrayLayer(0);
                 viewInfo.subresourceRange().layerCount(1);
                 long[] res = new long[1];
-                if(vkCreateImageView(device.getDevice(), viewInfo, null, res)!=VK_SUCCESS){
+                if (vkCreateImageView(device.getDevice(), viewInfo, null, res) != VK_SUCCESS) {
                     throw new RuntimeException("Failed to create swap chain image view");
                 }
                 swapChainImageViews.add(res[0]);
             });
         }
-        
+
     }
-    
-    private VkSurfaceFormatKHR chooseSwapSurfaceFormat(List<VkSurfaceFormatKHR> availableFormats){
-           return availableFormats.stream()
-                    .filter(availableFormat -> availableFormat.format() == VK_FORMAT_B8G8R8_UNORM)
-                    .filter(availableFormat -> availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-                    .findAny()
-                    .orElse(availableFormats.get(0));
+
+    private VkSurfaceFormatKHR chooseSwapSurfaceFormat(List<VkSurfaceFormatKHR> availableFormats) {
+        return availableFormats.stream()
+                .filter(availableFormat -> availableFormat.format() == VK_FORMAT_B8G8R8_UNORM)
+                .filter(availableFormat -> availableFormat.colorSpace() == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                .findAny()
+                .orElse(availableFormats.get(0));
     }
-    
-    private int chooseSwapPresentMode(List<Integer> availablePresentModes){
-        for(int presentMode : availablePresentModes){
-            if(presentMode==VK_PRESENT_MODE_MAILBOX_KHR){
+
+    private int chooseSwapPresentMode(List<Integer> availablePresentModes) {
+        for (int presentMode : availablePresentModes) {
+            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
                 return presentMode;
             }
         }
         return VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
-    
-    private VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities){
-         if(capabilities.currentExtent().width() != Long.MAX_VALUE) {
-                return capabilities.currentExtent();
-            }
 
-            VkExtent2D actualExtent = VkExtent2D.calloc().set(width, height);
+    private VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
+        if (capabilities.currentExtent().width() != Long.MAX_VALUE) {
+            return capabilities.currentExtent();
+        }
 
-            VkExtent2D minExtent = capabilities.minImageExtent();
-            VkExtent2D maxExtent = capabilities.maxImageExtent();
+        VkExtent2D actualExtent = VkExtent2D.calloc().set(width, height);
 
-            actualExtent.width(clamp(minExtent.width(), maxExtent.width(), actualExtent.width()));
-            actualExtent.height(clamp(minExtent.height(), maxExtent.height(), actualExtent.height()));
+        VkExtent2D minExtent = capabilities.minImageExtent();
+        VkExtent2D maxExtent = capabilities.maxImageExtent();
 
-            return actualExtent;
+        actualExtent.width(clamp(minExtent.width(), maxExtent.width(), actualExtent.width()));
+        actualExtent.height(clamp(minExtent.height(), maxExtent.height(), actualExtent.height()));
+
+        return actualExtent;
     }
-    
+
     private int clamp(int min, int max, int value) {
         return Math.max(min, Math.min(max, value));
     }
 
     @Override
     protected void finalize() throws Throwable {
-        try{
+        try {
             destroy();
-        } finally{
+        } finally {
             super.finalize();
         }
     }
-    
-    
+
 }

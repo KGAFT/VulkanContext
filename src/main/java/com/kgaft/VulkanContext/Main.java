@@ -2,20 +2,17 @@ package com.kgaft.VulkanContext;
 
 
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
-import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.DefaultVulkanLoggerCallback;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
+import com.kgaft.VulkanContext.Vulkan.VulkanSwapChain;
 import com.kgaft.Window.*;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.glfw.GLFWVulkan;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.vulkan.VK13.vkEnumeratePhysicalDevices;
 
 public class Main {
     public static void main(String[] args) {
@@ -39,7 +36,7 @@ public class Main {
         long windowSurface = window.getSurface(instance.getInstance());   
         VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
         VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
-        
+        VulkanSwapChain swapChain = new VulkanSwapChain(device, 800, 600);
         System.out.println("True");
     }
 }

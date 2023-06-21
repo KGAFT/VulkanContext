@@ -1,4 +1,4 @@
-package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
+package com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability;
 
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -10,22 +10,6 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK13.*;
 
-class SwapChainSupportDetails{
-    public VkSurfaceCapabilitiesKHR capabilities;
-    public ArrayList<VkSurfaceFormatKHR> formats = new ArrayList<>();
-    public ArrayList<Integer> presentModes = new ArrayList<>();
-}
-
-class QueueFamilyIndices{
-    public int graphicsFamily;
-    public int presentFamily;
-    public boolean graphicsFamilyHasValue = false;
-    public boolean presentFamilyHasValue = false;
-
-    boolean isComplete(){
-        return graphicsFamilyHasValue && presentFamilyHasValue;
-    }
-}
 
 public class DeviceSuitability {
     private static ArrayList<String> requiredDeviceExtensions = new ArrayList<>();
@@ -82,24 +66,31 @@ public class DeviceSuitability {
     
 
     public static SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, long surface){
-        SwapChainSupportDetails supportDetails = new SwapChainSupportDetails();
-        supportDetails.capabilities = VkSurfaceCapabilitiesKHR.calloc();
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, supportDetails.capabilities);
-        int[] formatsCount = new int[1];
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, formatsCount, null);
-        VkSurfaceFormatKHR.Buffer surfaceFormats = VkSurfaceFormatKHR.calloc(formatsCount[0]);
-        while(surfaceFormats.remaining()>0){
-            supportDetails.formats.add(surfaceFormats.get());
-        }
-        surfaceFormats.free();
-        int[] presentModeCount = new int[1];
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, presentModeCount, null);
-        int[] presentModes = new int[presentModeCount[0]];
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, presentModeCount, presentModes);
-        for (int presentMode : presentModes) {
-            supportDetails.presentModes.add(presentMode);
-        }
-        return supportDetails;
+            SwapChainSupportDetails details = new SwapChainSupportDetails();
+
+            details.capabilities = VkSurfaceCapabilitiesKHR.calloc();
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, details.capabilities);
+            int[] count = new int[1];
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, null);
+            if(count[0] != 0) {
+                VkSurfaceFormatKHR.Buffer buffer = VkSurfaceFormatKHR.calloc(count[0]);
+                vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, count, buffer);
+                while(buffer.hasRemaining()){
+                    details.formats.add(buffer.get());
+                }
+            }
+
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device,surface, count, null);
+
+            if(count[0] != 0) {
+                int[] presentModes = new int[count[0]];
+                vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, count, presentModes);
+                for(int i : presentModes){
+                    details.presentModes.add(i);
+                }
+            }
+           
+            return details;
     }
 
     public static boolean isDeviceSuitable(VkPhysicalDevice device, long surface){

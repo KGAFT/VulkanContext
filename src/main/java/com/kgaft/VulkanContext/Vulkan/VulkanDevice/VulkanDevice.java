@@ -1,5 +1,7 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
 
+import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.QueueFamilyIndices;
+import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.DeviceSuitability;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -199,6 +201,20 @@ public class VulkanDevice {
         }
         
     }
+
+    public VkPhysicalDevice getDeviceToCreate() {
+        return deviceToCreate;
+    }
+
+    public long getRenderSurface() {
+        return renderSurface;
+    }
+
+    public VkDevice getDevice() {
+        return device;
+    }
+    
+    
 
     private void createLogicalDevice(boolean enableLog) {
         try (MemoryStack stack = MemoryStack.stackPush()) {

@@ -28,6 +28,25 @@ public class VulkanSwapChain {
         this.width = width;
         this.height = height;
         createSwapChain();
+        createImageViews();
+    }
+
+    public void destroy(){
+        for(long view : swapChainImageViews){
+            vkDestroyImageView(device.getDevice(), view, null);
+        }
+        swapChainImageViews.clear();
+        KHRSwapchain.vkDestroySwapchainKHR(device.getDevice(), swapChain, null);
+        swapChain = 0;
+        swapChainImages.clear();
+    }
+    
+    public void recreate(int width, int height){
+        this.width = width;
+        this.height = height;
+        destroy();
+        createSwapChain();
+        createImageViews();
     }
     
     private void createSwapChain(){
@@ -82,6 +101,29 @@ public class VulkanSwapChain {
         }
     }
     
+    private void createImageViews(){
+        try(MemoryStack stack = MemoryStack.stackPush()){
+            swapChainImages.forEach(image->{
+                VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
+                viewInfo.sType$Default();
+                viewInfo.image(image);
+                viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
+                viewInfo.format(swapChainImageFormat);
+                viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                viewInfo.subresourceRange().baseMipLevel(0);
+                viewInfo.subresourceRange().levelCount(1);
+                viewInfo.subresourceRange().baseArrayLayer(0);
+                viewInfo.subresourceRange().layerCount(1);
+                long[] res = new long[1];
+                if(vkCreateImageView(device.getDevice(), viewInfo, null, res)!=VK_SUCCESS){
+                    throw new RuntimeException("Failed to create swap chain image view");
+                }
+                swapChainImageViews.add(res[0]);
+            });
+        }
+        
+    }
+    
     private VkSurfaceFormatKHR chooseSwapSurfaceFormat(List<VkSurfaceFormatKHR> availableFormats){
            return availableFormats.stream()
                     .filter(availableFormat -> availableFormat.format() == VK_FORMAT_B8G8R8_UNORM)
@@ -98,6 +140,7 @@ public class VulkanSwapChain {
         }
         return VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
+    
     private VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities){
          if(capabilities.currentExtent().width() != Long.MAX_VALUE) {
                 return capabilities.currentExtent();
@@ -114,7 +157,18 @@ public class VulkanSwapChain {
             return actualExtent;
     }
     
-     private int clamp(int min, int max, int value) {
-            return Math.max(min, Math.min(max, value));
-      }
+    private int clamp(int min, int max, int value) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try{
+            destroy();
+        } finally{
+            super.finalize();
+        }
+    }
+    
+    
 }

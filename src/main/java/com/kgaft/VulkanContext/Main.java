@@ -37,6 +37,7 @@ public class Main {
         VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
         VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
         VulkanSwapChain swapChain = new VulkanSwapChain(device, 800, 600);
+        swapChain.recreate(2560, 1440);
         System.out.println("True");
     }
 }

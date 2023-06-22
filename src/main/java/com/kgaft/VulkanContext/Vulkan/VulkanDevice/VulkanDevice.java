@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
 
+import com.kgaft.VulkanContext.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.QueueFamilyIndices;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.DeviceSuitability;
 import java.util.LinkedHashMap;
@@ -12,10 +13,10 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-
 import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanDevice {
+public class VulkanDevice extends DestroyableObject {
+
     public static LinkedHashMap<VkPhysicalDevice, VkPhysicalDeviceProperties> enumerateSupportedDevices(
             VkInstance instance, long surface) {
         int[] deviceCount = new int[1];
@@ -61,22 +62,21 @@ public class VulkanDevice {
         createLogicalDevice(debugDevice);
         createCommandPool();
     }
-    
+
     /**
-     * 
+     *
      * @return VkBuffer at index 0. VkBufferMemory at index 1.
      */
-
-    public long[] createBuffer(long size, int usageFlags, int memoryPropertyFlags){
+    public long[] createBuffer(long size, int usageFlags, int memoryPropertyFlags) {
         long[] result = new long[2];
-        try(MemoryStack stack = MemoryStack.stackPush()){
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCreateInfo createInfo = VkBufferCreateInfo.calloc(stack);
             createInfo.sType$Default();
             createInfo.size(size);
             createInfo.usage(usageFlags);
             createInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
             long[] tempRes = new long[1];
-            if(vkCreateBuffer(device, createInfo, null, tempRes)!=VK_SUCCESS){
+            if (vkCreateBuffer(device, createInfo, null, tempRes) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create buffer");
             }
             result[0] = tempRes[0];
@@ -88,7 +88,7 @@ public class VulkanDevice {
             allocateInfo.allocationSize(memRequirements.size());
             allocateInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), memoryPropertyFlags, stack));
             tempRes[0] = 0;
-            if(vkAllocateMemory(device, allocateInfo, null, tempRes)!=VK_SUCCESS){
+            if (vkAllocateMemory(device, allocateInfo, null, tempRes) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to allocate memory for buffer");
             }
             result[1] = tempRes[0];
@@ -96,8 +96,8 @@ public class VulkanDevice {
         }
     }
 
-    public long createImage(int width, int height, int format, int tiling, int usage, boolean isFrameBuffer){
-        try(MemoryStack stack = MemoryStack.stackPush()){
+    public long createImage(int width, int height, int format, int tiling, int usage, boolean isFrameBuffer) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageCreateInfo createInfo = VkImageCreateInfo.calloc(stack);
             createInfo.sType$Default();
             createInfo.imageType(VK_IMAGE_TYPE_2D);
@@ -112,7 +112,7 @@ public class VulkanDevice {
             createInfo.samples(VK_SAMPLE_COUNT_1_BIT);
             createInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
             long[] result = new long[1];
-            if(vkCreateImage(device, createInfo, null, result)!=VK_SUCCESS){
+            if (vkCreateImage(device, createInfo, null, result) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create image");
             }
             return result[0];
@@ -126,11 +126,16 @@ public class VulkanDevice {
     public VkQueue getPresentQueue() {
         return presentQueue;
     }
-    
-    
-    
-    public long createImageView(long image, int format){
-        try(MemoryStack stack = MemoryStack.stackPush()){
+
+    @Override
+    public void destroy() {
+        vkDestroyCommandPool(device, commandPool, null);
+        vkDestroyDevice(device, null);
+        super.destroy();
+    }
+
+    public long createImageView(long image, int format) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
             viewInfo.sType$Default();
             viewInfo.image(image);
@@ -143,26 +148,26 @@ public class VulkanDevice {
             viewInfo.subresourceRange().layerCount(1);
 
             long[] result = new long[1];
-            if(vkCreateImageView(device, viewInfo, null, result)!=VK_SUCCESS){
+            if (vkCreateImageView(device, viewInfo, null, result) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create image view");
             }
             return result[0];
         }
     }
 
-    public int findMemoryType(int typeFilter, int properties, MemoryStack stack){
+    public int findMemoryType(int typeFilter, int properties, MemoryStack stack) {
         VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
         vkGetPhysicalDeviceMemoryProperties(deviceToCreate, memProperties);
-        for(int i = 0; i<memProperties.memoryTypeCount(); i++){
-            if((typeFilter & (int)(1 << i))>0 &&(memProperties.memoryTypes(i).propertyFlags()&properties)==properties){
+        for (int i = 0; i < memProperties.memoryTypeCount(); i++) {
+            if ((typeFilter & (int) (1 << i)) > 0 && (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
                 return i;
             }
         }
         throw new RuntimeException("Failed to find suitable memory type");
     }
 
-    public void copyBuffer(long srcBuffer, long dstBuffer, long size){
-        try(MemoryStack stack = MemoryStack.stackPush()){
+    public void copyBuffer(long srcBuffer, long dstBuffer, long size) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkCommandBuffer commandBuffer = beginSingleTimeCommands();
             VkBufferCopy.Buffer copyRegion = VkBufferCopy.calloc(1, stack);
             copyRegion.srcOffset(0); // Optional
@@ -171,8 +176,7 @@ public class VulkanDevice {
             vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, copyRegion);
             endSingleTimeCommands(commandBuffer);
         }
-        
-        
+
     }
 
     public VkCommandBuffer beginSingleTimeCommands() {
@@ -182,7 +186,7 @@ public class VulkanDevice {
             allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
             allocInfo.commandPool(commandPool);
             allocInfo.commandBufferCount(1);
-            
+
             PointerBuffer tempRes = stack.callocPointer(1);
             vkAllocateCommandBuffers(device, allocInfo, tempRes);
             VkCommandBuffer result = new VkCommandBuffer(tempRes.get(), device);
@@ -195,9 +199,9 @@ public class VulkanDevice {
         }
     }
 
-    public void endSingleTimeCommands(VkCommandBuffer cmd){
+    public void endSingleTimeCommands(VkCommandBuffer cmd) {
         vkEndCommandBuffer(cmd);
-        try(MemoryStack stack = MemoryStack.stackPush()){
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSubmitInfo.Buffer submitInfo = VkSubmitInfo.calloc(1, stack);
             submitInfo.sType$Default();
             PointerBuffer pBuffer = stack.callocPointer(1);
@@ -209,7 +213,7 @@ public class VulkanDevice {
 
             vkFreeCommandBuffers(device, commandPool, pBuffer);
         }
-        
+
     }
 
     public VkPhysicalDevice getDeviceToCreate() {
@@ -223,8 +227,6 @@ public class VulkanDevice {
     public VkDevice getDevice() {
         return device;
     }
-    
-    
 
     private void createLogicalDevice(boolean enableLog) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -300,5 +302,4 @@ public class VulkanDevice {
         }
     }
 
-    
 }

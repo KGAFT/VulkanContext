@@ -1,11 +1,12 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanSync;
 
+import com.kgaft.VulkanContext.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanOneFrameSync {
+public class VulkanOneFrameSync extends DestroyableObject{
     private long availableSemaphore;
     private long waitSemaphore;
     private VulkanDevice device;
@@ -64,17 +65,11 @@ public class VulkanOneFrameSync {
             this.fence = output[0];
         }
     }
-    
-    private void destroy(){
+    @Override
+    public void destroy(){
         vkDestroySemaphore(device.getDevice(), availableSemaphore, null);
         vkDestroySemaphore(device.getDevice(), waitSemaphore, null);
+        super.destroy();
     }
-
-    @Override
-    protected void finalize() throws Throwable {
-        destroy();
-        super.finalize();
-    }
-    
     
 }

@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan;
 
+import com.kgaft.VulkanContext.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.DeviceSuitability;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.QueueFamilyIndices;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
@@ -12,7 +13,7 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 
 import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanSwapChain {
+public class VulkanSwapChain extends DestroyableObject{
 
     private List<Long> swapChainImages = new ArrayList<>();
     private List<Long> swapChainImageViews = new ArrayList<>();
@@ -30,7 +31,8 @@ public class VulkanSwapChain {
         createSwapChain();
         createImageViews();
     }
-
+    
+    @Override
     public void destroy() {
         for (long view : swapChainImageViews) {
             vkDestroyImageView(device.getDevice(), view, null);
@@ -39,6 +41,7 @@ public class VulkanSwapChain {
         KHRSwapchain.vkDestroySwapchainKHR(device.getDevice(), swapChain, null);
         swapChain = 0;
         swapChainImages.clear();
+        super.destroy();
     }
 
     public void recreate(int width, int height) {
@@ -49,6 +52,11 @@ public class VulkanSwapChain {
         createImageViews();
     }
 
+    public long getSwapChain() {
+        return swapChain;
+    }
+    
+    
     private void createSwapChain() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             SwapChainSupportDetails details = DeviceSuitability.querySwapChainSupport(device.getDeviceToCreate(), device.getRenderSurface());
@@ -158,15 +166,6 @@ public class VulkanSwapChain {
 
     private int clamp(int min, int max, int value) {
         return Math.max(min, Math.min(max, value));
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            destroy();
-        } finally {
-            super.finalize();
-        }
     }
 
 }

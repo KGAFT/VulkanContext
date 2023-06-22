@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanSync;
 
+import com.kgaft.VulkanContext.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanThreeFrameSync {
+public class VulkanThreeFrameSync extends DestroyableObject{
 
     private static final int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -78,23 +79,16 @@ public class VulkanThreeFrameSync {
             return imgRes.get();
         }
     }
-
+    @Override
     public void destroy() {
         for (int i = 0; i < 2; i++) {
             vkDestroySemaphore(device.getDevice(), imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device.getDevice(), renderFinishedSemaphores.get(i), null);
             vkDestroyFence(device.getDevice(), inFlightFences.get(i), null);
         }
+        super.destroy();
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        destroy();
-        super.finalize(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
-    }
-
-    
-    
     private void createSyncObjects() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSemaphoreCreateInfo createInfo = VkSemaphoreCreateInfo.calloc(stack);
@@ -124,4 +118,6 @@ public class VulkanThreeFrameSync {
             imagesInFlight.add(0l);
         }
     }
+    
+    
 }

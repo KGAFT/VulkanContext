@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 
-public class VulkanInstance {
+public class VulkanInstance{
     private VkInstance instance;
 
     public boolean createInstance(String appName, String engineName, boolean enableLogging, List<String> requiredExtensions){

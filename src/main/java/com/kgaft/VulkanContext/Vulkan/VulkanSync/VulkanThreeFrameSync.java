@@ -1,6 +1,7 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanSync;
 
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.lwjgl.system.MemoryStack;
@@ -34,6 +35,66 @@ public class VulkanThreeFrameSync {
         return res[0];
     }
 
+    public int submitCommandBuffer(VkCommandBuffer cmd, long swapChain, int currentImage) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            if (imagesInFlight.get(currentImage) != 0) {
+                vkWaitForFences(device.getDevice(), imagesInFlight.get(currentImage), true, Long.MAX_VALUE);
+            }
+            imagesInFlight.set(currentImage, inFlightFences.get(currentFrame));
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
+            submitInfo.sType$Default();
+            submitInfo.pWaitSemaphores(stack.callocLong(1));
+            submitInfo.pWaitSemaphores().put(imageAvailableSemaphores.get(currentFrame));
+            submitInfo.pWaitSemaphores().rewind();
+            submitInfo.pWaitDstStageMask(stack.callocInt(1));
+            submitInfo.pWaitDstStageMask().put(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            submitInfo.pWaitDstStageMask().rewind();
+
+            submitInfo.pCommandBuffers(stack.callocPointer(1));
+            submitInfo.pCommandBuffers().put(cmd.address());
+            submitInfo.pCommandBuffers().rewind();
+
+            submitInfo.pSignalSemaphores(stack.callocLong(1));
+            submitInfo.pSignalSemaphores().put(renderFinishedSemaphores.get(currentFrame));
+
+            vkResetFences(device.getDevice(), inFlightFences.get(currentFrame));
+            if (vkQueueSubmit(device.getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame)) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to submit command buffers!");
+            }
+
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack);
+            presentInfo.sType$Default();
+            presentInfo.pWaitSemaphores(submitInfo.pSignalSemaphores());
+            presentInfo.pSwapchains(stack.callocLong(1));
+            presentInfo.pSwapchains().put(swapChain);
+            presentInfo.pSwapchains().rewind();
+            IntBuffer imgRes = stack.callocInt(1);
+            imgRes.put(currentImage);
+            imgRes.rewind();
+            presentInfo.pImageIndices(imgRes);
+
+            KHRSwapchain.vkQueuePresentKHR(device.getPresentQueue(), presentInfo);
+            currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+            return imgRes.get();
+        }
+    }
+
+    public void destroy() {
+        for (int i = 0; i < 2; i++) {
+            vkDestroySemaphore(device.getDevice(), imageAvailableSemaphores.get(i), null);
+            vkDestroySemaphore(device.getDevice(), renderFinishedSemaphores.get(i), null);
+            vkDestroyFence(device.getDevice(), inFlightFences.get(i), null);
+        }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        destroy();
+        super.finalize(); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
+    
+    
     private void createSyncObjects() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSemaphoreCreateInfo createInfo = VkSemaphoreCreateInfo.calloc(stack);

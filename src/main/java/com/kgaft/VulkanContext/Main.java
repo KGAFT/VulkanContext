@@ -1,5 +1,9 @@
 package com.kgaft.VulkanContext;
 
+/**
+ * @TODO Add check if object destroyed before run destroy method on gc event
+ */
+
 
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;

@@ -119,6 +119,16 @@ public class VulkanDevice {
         }
     }
 
+    public VkQueue getGraphicsQueue() {
+        return graphicsQueue;
+    }
+
+    public VkQueue getPresentQueue() {
+        return presentQueue;
+    }
+    
+    
+    
     public long createImageView(long image, int format){
         try(MemoryStack stack = MemoryStack.stackPush()){
             VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);

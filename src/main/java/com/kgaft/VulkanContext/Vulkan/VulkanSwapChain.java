@@ -48,12 +48,21 @@ public class VulkanSwapChain extends DestroyableObject{
         this.width = width;
         this.height = height;
         destroy();
+        super.destroyed = false;
         createSwapChain();
         createImageViews();
     }
 
     public long getSwapChain() {
         return swapChain;
+    }
+
+    public List<Long> getSwapChainImages() {
+        return swapChainImages;
+    }
+
+    public List<Long> getSwapChainImageViews() {
+        return swapChainImageViews;
     }
     
     

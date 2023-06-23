@@ -155,6 +155,40 @@ public class VulkanDevice extends DestroyableObject {
         }
     }
 
+    public int findSupportedFormat(List<Integer> candidates, int tiling, int features) {
+        for (int format : candidates) {
+            VkFormatProperties props = VkFormatProperties.calloc();
+            vkGetPhysicalDeviceFormatProperties(deviceToCreate, format, props);
+
+            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures() & features) == features) {
+                return format;
+            } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures() & features) == features) {
+                return format;
+            }
+            props.free();
+        }
+        throw new RuntimeException("failed to find supported format!");
+    }
+
+    public void createImageWithInfo(MemoryStack stack, VkImageCreateInfo imageInfo, int properties, long[] image, long[] imageMemory) {
+        if (vkCreateImage(device, imageInfo, null, image) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to create image!");
+        }
+        VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
+        vkGetImageMemoryRequirements(device, image[0], memRequirements);
+        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack);
+        allocInfo.sType$Default();
+        allocInfo.allocationSize(memRequirements.size());
+        allocInfo.memoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits(), properties, stack));
+        if (vkAllocateMemory(device, allocInfo, null, imageMemory) != VK_SUCCESS) {
+            throw new RuntimeException("failed to allocate image memory!");
+        }
+
+        if (vkBindImageMemory(device, image[0], imageMemory[0], 0) != VK_SUCCESS) {
+            throw new RuntimeException("failed to bind image memory!");
+        }
+    }
+
     public int findMemoryType(int typeFilter, int properties, MemoryStack stack) {
         VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
         vkGetPhysicalDeviceMemoryProperties(deviceToCreate, memProperties);

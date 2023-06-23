@@ -1,8 +1,11 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanSync;
 
 import com.kgaft.VulkanContext.DestroyableObject;
-import org.lwjgl.vulkan.VK13;
+import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
+import com.kgaft.VulkanContext.Vulkan.VulkanSwapChain;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
+import org.lwjgl.vulkan.*;
+import static org.lwjgl.vulkan.VK13.*;
 
 public class VulkanSyncManager extends DestroyableObject{
 

@@ -70,7 +70,7 @@ public class VulkanSyncManager extends DestroyableObject{
     
     
     
-    int getCurrentMode(){
+    public int getCurrentMode(){
         return threeFrameSync!=null?3:1;
     }
     

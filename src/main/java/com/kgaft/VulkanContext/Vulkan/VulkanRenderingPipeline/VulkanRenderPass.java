@@ -52,6 +52,20 @@ public class VulkanRenderPass extends DestroyableObject {
         super.destroy();
     }
 
+    public List<Long> getFrameBuffers() {
+        return frameBuffers;
+    }
+
+    public List<Long> getDepthImages() {
+        return depthImages;
+    }
+
+    public List<Long> getDepthImageViews() {
+        return depthImageViews;
+    }
+    
+    
+    
     public void recreate(List<Long> images, int width, int height, int imagePerStepAmount, int imageFormat) {
         this.attachmentCount = imagePerStepAmount;
         vkDeviceWaitIdle(device.getDevice());

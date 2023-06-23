@@ -96,6 +96,11 @@ public class VulkanDevice extends DestroyableObject {
         }
     }
 
+    public long getCommandPool() {
+        return commandPool;
+    }
+    
+    
     public long createImage(int width, int height, int format, int tiling, int usage, boolean isFrameBuffer) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageCreateInfo createInfo = VkImageCreateInfo.calloc(stack);

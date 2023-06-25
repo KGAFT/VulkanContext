@@ -50,6 +50,16 @@ public class GraphicsPipelineConfigurer extends DestroyableObject {
         }
     }
 
+    @Override
+    public void destroy() {
+        vkDestroyPipelineLayout(device.getDevice(), pipelineLayout, null);
+        if (descriptorSetLayout != VK_NULL_HANDLE)
+        {
+            vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, null);
+        }
+        super.destroy();
+    }
+
     private void prepareBinding(List<VertexInput> inputs){
         int size = 0;
         for (VertexInput input : inputs) {
@@ -71,7 +81,7 @@ public class GraphicsPipelineConfigurer extends DestroyableObject {
             inputAttributeDesc.get();
             offsetCount += element.typeSize * element.coordinatesAmount;
         }
-        inputAttributeDesc.rewind()
+        inputAttributeDesc.rewind();
     }
     private void loadPipelineLayout(PipelineBuilder builder) {
         try (MemoryStack stack = MemoryStack.stackPush()) {

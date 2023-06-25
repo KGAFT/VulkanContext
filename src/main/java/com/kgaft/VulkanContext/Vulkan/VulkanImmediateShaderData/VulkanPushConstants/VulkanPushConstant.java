@@ -1,7 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanImmediateShaderData.VulkanPushConstants;
 
 import java.nio.ByteBuffer;
-import org.lwjgl.ByteBuffer;
 
 public class VulkanPushConstant {
    private long size;

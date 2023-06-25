@@ -3,7 +3,8 @@ package com.kgaft.VulkanContext.Vulkan.VulkanImmediateShaderData.VulkanPushConst
 import java.util.ArrayList;
 import java.util.List;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VK13;
 
 public class VulkanPushConstantManager {
     private List<VulkanPushConstant> pushConstants = new ArrayList<>();
@@ -12,9 +13,9 @@ public class VulkanPushConstantManager {
         pushConstants.add(pushConstant);
     }
     
-    public void loadConstantsToShader(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout){
+    public void loadConstantsToShader(VkCommandBuffer cmd, long pipelineLayout){
         for(VulkanPushConstant item : pushConstants){
-            VK10.vkCmdPushConstants(cmd, pipelineLayout, item.getShaderStages(), 0, item.getSize(), item.getData());
+            VK13.vkCmdPushConstants(cmd, pipelineLayout, item.getShaderStages(), 0, item.getData());
         }
     }
 }

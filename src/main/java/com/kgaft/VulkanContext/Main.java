@@ -1,8 +1,5 @@
 package com.kgaft.VulkanContext;
 
-/**
- * @TODO Add check if object destroyed before run destroy method on gc event
- */
 
 
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
@@ -41,7 +38,12 @@ public class Main {
         
         
         Window window = Window.getWindow();
-        long windowSurface = window.getSurface(instance.getInstance());   
+        long windowSurface = window.getSurface(instance.getInstance());
+
+        VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).forEach((el, cel)->{
+            System.out.println(cel.deviceNameString());
+        });
+
         VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
         VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
         VulkanSwapChain swapChain = new VulkanSwapChain(device, 800, 600);

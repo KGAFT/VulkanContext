@@ -11,9 +11,7 @@ import org.lwjgl.vulkan.VkPipelineViewportStateCreateInfo;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanGraphicsPipeline extends DestroyableObject {
-
     private static PipelineConfigInfo configInfo;
-
     private long graphicsPipeline;
     private VulkanDevice device;
     private GraphicsPipelineConfigurer configurer;

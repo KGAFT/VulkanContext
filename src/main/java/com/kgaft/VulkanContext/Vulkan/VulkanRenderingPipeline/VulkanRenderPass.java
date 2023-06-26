@@ -238,4 +238,8 @@ public class VulkanRenderPass extends DestroyableObject {
             references.get();
         }
     }
+
+    public long getRenderPass() {
+        return renderPass;
+    }
 }

@@ -10,11 +10,11 @@ import java.util.List;
 import static org.lwjgl.vulkan.VK13.*;
 
 public class GraphicsPipelineConfigurer extends DestroyableObject {
-    private long pipelineLayout;
-    private long descriptorSetLayout = 0;
-    private VulkanDevice device;
-    private VkVertexInputBindingDescription inputBindDesc;
-    private VkVertexInputAttributeDescription.Buffer inputAttributeDesc;
+    protected long pipelineLayout;
+    protected long descriptorSetLayout = 0;
+    protected VulkanDevice device;
+    protected VkVertexInputBindingDescription.Buffer inputBindDesc;
+    protected VkVertexInputAttributeDescription.Buffer inputAttributeDesc;
 
     public GraphicsPipelineConfigurer(VulkanDevice device, PipelineBuilder builder) {
         this.device = device;
@@ -65,7 +65,7 @@ public class GraphicsPipelineConfigurer extends DestroyableObject {
         for (VertexInput input : inputs) {
             size+=input.typeSize*input.coordinatesAmount;
         }
-        inputBindDesc = VkVertexInputBindingDescription.calloc();
+        inputBindDesc = VkVertexInputBindingDescription.calloc(1);
         inputBindDesc.binding(0);
         inputBindDesc.stride(size);
         inputBindDesc.inputRate(VK_VERTEX_INPUT_RATE_VERTEX);

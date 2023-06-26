@@ -9,12 +9,13 @@ import static org.lwjgl.vulkan.VK13.*;
 
 public class PipelineConfigInfo {
 
-    public void defaultPipelineConfigInfo(PipelineConfigInfo configInfo, int width, int height, int attachmentCount, boolean alphaBlending, boolean depthTest, int culling){
+    public static void defaultPipelineConfigInfo(PipelineConfigInfo configInfo, int width, int height, int attachmentCount, boolean alphaBlending, boolean depthTest, int culling){
+        configInfo.inputAssemblyInfo.clear();
         configInfo.inputAssemblyInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
         configInfo.inputAssemblyInfo.topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         configInfo.inputAssemblyInfo.primitiveRestartEnable(false);
 
-
+        configInfo.viewport.clear();
         configInfo.viewport.x(0);
         configInfo.viewport.y(0);
         configInfo.viewport.width(height);
@@ -22,18 +23,24 @@ public class PipelineConfigInfo {
         configInfo.viewport.minDepth(0);
         configInfo.viewport.maxDepth(1);
 
-        VkOffset2D offset2D = VkOffset2D.malloc();
+        VkOffset2D offset2D = VkOffset2D.calloc();
         offset2D.clear();
         offset2D.x(0);
         offset2D.y(0);
+        if(configInfo.scissor.offset()!=null){
+            configInfo.scissor.offset().free();
+        }
         configInfo.scissor.offset(offset2D);
 
         VkExtent2D extent2D = VkExtent2D.calloc();
         extent2D.width(width);
         extent2D.height(height);
+        if(configInfo.scissor.extent()!=null){
+            configInfo.scissor.extent().free();
+        }
         configInfo.scissor.extent(extent2D);
 
-
+        configInfo.rasterizationInfo.clear();
         configInfo.rasterizationInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
         configInfo.rasterizationInfo.depthClampEnable(false);
         configInfo.rasterizationInfo.rasterizerDiscardEnable(false);
@@ -47,7 +54,7 @@ public class PipelineConfigInfo {
         configInfo.rasterizationInfo.depthBiasSlopeFactor(0.0f); // Optional
 
 
-
+        configInfo.multisampleInfo.clear();
         configInfo.multisampleInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
         configInfo.multisampleInfo.sampleShadingEnable(false);
         configInfo.multisampleInfo.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
@@ -55,6 +62,10 @@ public class PipelineConfigInfo {
         configInfo.multisampleInfo.pSampleMask(null); // Optional
         configInfo.multisampleInfo.alphaToCoverageEnable(false); // Optional
         configInfo.multisampleInfo.alphaToOneEnable(false); // Optional
+
+        if(configInfo.colorBlendAttachments!=null){
+            configInfo.colorBlendAttachments.free();
+        }
 
         configInfo.colorBlendAttachments = VkPipelineColorBlendAttachmentState.calloc(attachmentCount);
 
@@ -92,6 +103,7 @@ public class PipelineConfigInfo {
 
         configInfo.colorBlendAttachments.rewind();
 
+        configInfo.colorBlendInfo.clear();
         configInfo.colorBlendInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
         configInfo.colorBlendInfo.logicOpEnable(false);
         configInfo.colorBlendInfo.logicOp(VK_LOGIC_OP_COPY); // Optional
@@ -101,6 +113,7 @@ public class PipelineConfigInfo {
         configInfo.colorBlendInfo.blendConstants(2, 0); // Optional
         configInfo.colorBlendInfo.blendConstants(3, 0); // Optional
 
+        configInfo.depthStencilInfo.clear();
         configInfo.depthStencilInfo.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
         configInfo.depthStencilInfo.depthTestEnable(depthTest);
         configInfo.depthStencilInfo.depthWriteEnable(true);
@@ -116,19 +129,19 @@ public class PipelineConfigInfo {
 
         configInfo.subpass = 0;
     }
-    private VkViewport viewport;
-    private VkRect2D scissor;
-    private VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-    private VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-    private VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    private VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachments;
-    private VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-    private VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+    protected VkViewport.Buffer viewport;
+    protected VkRect2D.Buffer scissor;
+    protected VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+    protected VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+    protected VkPipelineMultisampleStateCreateInfo multisampleInfo;
+    protected VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachments;
+    protected VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+    protected VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
 
     private long subpass;
     public PipelineConfigInfo(){
-        viewport = VkViewport.calloc();
-        scissor = VkRect2D.calloc();
+        viewport = VkViewport.calloc(1);
+        scissor = VkRect2D.calloc(1);
         scissor.extent(VkExtent2D.calloc());
         inputAssemblyInfo = VkPipelineInputAssemblyStateCreateInfo.calloc();
         rasterizationInfo = VkPipelineRasterizationStateCreateInfo.calloc();

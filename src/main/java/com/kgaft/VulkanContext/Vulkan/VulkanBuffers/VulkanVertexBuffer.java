@@ -51,7 +51,7 @@ public class VulkanVertexBuffer extends DestroyableObject {
             stagingBufferMemory = buffers[1];
             PointerBuffer data = stack.callocPointer(1);
             vkMapMemory(device.getDevice(), stagingBufferMemory, 0, bufferSize, 0, data);
-            data.put(vertices);
+            device.memcpy(data.getByteBuffer(0, bufferSize), vertices, bufferSize);
             vkUnmapMemory(device.getDevice(), stagingBufferMemory);
             buffers = device.createBuffer(
                     bufferSize,

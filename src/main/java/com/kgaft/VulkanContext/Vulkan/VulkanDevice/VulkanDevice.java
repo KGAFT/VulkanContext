@@ -3,6 +3,8 @@ package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
 import com.kgaft.VulkanContext.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.QueueFamilyIndices;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitability.DeviceSuitability;
+
+import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -94,6 +96,32 @@ public class VulkanDevice extends DestroyableObject {
             result[1] = tempRes[0];
             return result;
         }
+    }
+
+    public void memcpy(ByteBuffer dst, ByteBuffer src, int size){
+        src.limit(size);
+        dst.put(src);
+        src.limit(src.capacity()).rewind();
+    }
+
+    public void copyBufferToImage(MemoryStack stack, long buffer, long image, int width, int height, int layerCount)
+    {
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+        VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+        region.bufferOffset(0);
+        region.bufferRowLength(0);
+        region.bufferImageHeight(0);
+        region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        region.imageSubresource().mipLevel(0);
+        region.imageSubresource().baseArrayLayer(0);
+        region.imageSubresource().layerCount(layerCount);
+        region.imageOffset(VkOffset3D.calloc(stack).x(0).y(0).z(0));
+        region.imageExtent(VkExtent3D.calloc(stack).width(width).height(height).depth(1));
+
+        vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+
+        endSingleTimeCommands(commandBuffer);
     }
 
     public long getCommandPool() {

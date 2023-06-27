@@ -19,7 +19,7 @@ public class VulkanIndexBuffer extends DestroyableObject {
     private VulkanDevice device;
     private int indicesAmount;
 
-    public VulkanIndexBuffer(int amount, VulkanDevice device, IntBuffer data) {
+    public VulkanIndexBuffer(int amount, VulkanDevice device, ByteBuffer data) {
         this.device = device;
         this.indicesAmount = amount;
         createIndexBuffer(data, amount);
@@ -40,7 +40,7 @@ public class VulkanIndexBuffer extends DestroyableObject {
         vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     }
 
-    private void createIndexBuffer(IntBuffer indices, int amount) {
+    private void createIndexBuffer(ByteBuffer indices, int amount) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int bufferSize = Integer.BYTES*amount;
             long stagingBuffer;
@@ -52,7 +52,7 @@ public class VulkanIndexBuffer extends DestroyableObject {
             stagingBufferMemory = buffers[1];
             PointerBuffer data = stack.callocPointer(1);
             vkMapMemory(device.getDevice(), stagingBufferMemory, 0, bufferSize, 0, data);
-            data.put(indices);
+            device.memcpy(data.getByteBuffer(0, bufferSize), indices, bufferSize);
             vkUnmapMemory(device.getDevice(), stagingBufferMemory);
             buffers = device.createBuffer(
                     bufferSize,

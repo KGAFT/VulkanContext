@@ -61,12 +61,12 @@ public class VulkanImage extends DestroyableObject {
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             device.copyBufferToImage(stack, stagingBuffer, image, imageWidth, imageHeight, 1);
             transitionImageLayout(stack, device, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    VK_IMAGE_LAYOUT_GENERAL);
 
             vkDestroyBuffer(device.getDevice(), stagingBuffer, null);
             vkFreeMemory(device.getDevice(), stagingBufferMemory, null);
 
-            return new VulkanImage(device, image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageWidth, imageHeight);
+            return new VulkanImage(device, image, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_GENERAL, imageWidth, imageHeight);
         }
     }
 
@@ -107,12 +107,12 @@ public class VulkanImage extends DestroyableObject {
         if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 
             barrier.srcAccessMask(0);
-            barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+            barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        } else {
 
             barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
             barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
@@ -120,8 +120,6 @@ public class VulkanImage extends DestroyableObject {
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-        } else {
-            throw new IllegalArgumentException("Unsupported layout transition");
         }
 
         VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
@@ -160,18 +158,18 @@ public class VulkanImage extends DestroyableObject {
         this.imageView = device.createImageView(image, format);
     }
 
-    public void copyToImage(VulkanImage target) {
+    public void copyToImage(VulkanImage target, boolean isDepth) {
         VkCommandBuffer cmd = device.beginSingleTimeCommands();
-        copyToImage(target, cmd);
+        copyToImage(target, cmd, isDepth);
         device.endSingleTimeCommands(cmd);
     }
 
-    public void copyToImage(VulkanImage target, VkCommandBuffer cmd) {
+    public void copyToImage(VulkanImage target, VkCommandBuffer cmd, boolean isDepth) {
         if (imageCopyRegion == null) {
             imageCopyRegion = VkImageCopy.calloc(1);
-            imageCopyRegion.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT);
+            imageCopyRegion.srcSubresource().aspectMask(isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT );
             imageCopyRegion.srcSubresource().layerCount(1);
-            imageCopyRegion.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT);
+            imageCopyRegion.dstSubresource().aspectMask(isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
             imageCopyRegion.dstSubresource().layerCount(1);
             imageCopyRegion.extent().depth(1);
         }
@@ -183,12 +181,12 @@ public class VulkanImage extends DestroyableObject {
                 target.image, target.imageLayout, imageCopyRegion);
     }
 
-    public void copyFromImage(long image, int imageLayout, VkCommandBuffer cmd) {
+    public void copyFromImage(long image, int imageLayout, VkCommandBuffer cmd, boolean isDepth) {
         if (imageCopyRegion == null) {
             imageCopyRegion = VkImageCopy.calloc(1);
-            imageCopyRegion.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT);
+            imageCopyRegion.srcSubresource().aspectMask(isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
             imageCopyRegion.srcSubresource().layerCount(1);
-            imageCopyRegion.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT);
+            imageCopyRegion.dstSubresource().aspectMask(isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
             imageCopyRegion.dstSubresource().layerCount(1);
 
             imageCopyRegion.extent().depth(1);
@@ -201,9 +199,9 @@ public class VulkanImage extends DestroyableObject {
                 this.image, this.imageLayout, imageCopyRegion);
     }
 
-    public void copyFromImage(long image, int imageLayout) {
+    public void copyFromImage(long image, int imageLayout, boolean isDepth) {
         VkCommandBuffer cmd = device.beginSingleTimeCommands();
-        copyFromImage(image, imageLayout, cmd);
+        copyFromImage(image, imageLayout, cmd, isDepth);
         device.endSingleTimeCommands(cmd);
     }
 

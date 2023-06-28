@@ -86,7 +86,7 @@ public class VulkanRenderPass extends DestroyableObject {
             depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            depthAttachment.finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            depthAttachment.finalLayout(VK_IMAGE_LAYOUT_GENERAL);
 
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.calloc(attachImagesAmount + 1, stack);
             prepareColorAttachmentDescription(attachments, format, attachImagesAmount, output);
@@ -96,7 +96,7 @@ public class VulkanRenderPass extends DestroyableObject {
 
             VkAttachmentReference depthAttachmentRef = VkAttachmentReference.calloc(stack);
             depthAttachmentRef.attachment(attachments.capacity() - 1);
-            depthAttachmentRef.layout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            depthAttachmentRef.layout(VK_IMAGE_LAYOUT_GENERAL);
 
             VkSubpassDescription.Buffer subpass = VkSubpassDescription.calloc(1, stack);
             subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -225,7 +225,7 @@ public class VulkanRenderPass extends DestroyableObject {
             result.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             result.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             result.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            result.finalLayout(output ? KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            result.finalLayout(output ? KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_GENERAL);
             result.get();
         }
     }

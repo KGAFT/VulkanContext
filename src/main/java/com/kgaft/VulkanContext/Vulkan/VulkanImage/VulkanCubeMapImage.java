@@ -51,7 +51,7 @@ public class VulkanCubeMapImage extends DestroyableObject {
 
             transitionImageLayout(stack, device, image[0], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6);
             device.copyBufferToImage(stack, stagingBuffer, image[0], width[0], height[0], 6);
-            transitionImageLayout(stack, device, image[0], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 6);
+            transitionImageLayout(stack, device, image[0], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 6);
             vkDestroyBuffer(device.getDevice(), stagingBuffer, null);
             vkFreeMemory(device.getDevice(), stagingBufferMemory, null);
             for (int i = 0; i < 6; i++)
@@ -91,13 +91,17 @@ public class VulkanCubeMapImage extends DestroyableObject {
         } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 
             barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
 
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
         } else {
-            throw new IllegalArgumentException("Unsupported layout transition");
+            barrier.srcAccessMask(0);
+            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         }
 
         VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();

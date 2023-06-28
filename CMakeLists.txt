@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(VulkanContext)
 
-set(VulkanSDKPath C:/VulkanSDK/1.3.250.0)
 set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB_RECURSE H_FILES src/cxx/*.h)

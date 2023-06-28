@@ -94,7 +94,7 @@ VulkanDescriptorSet::getChildOfObject(IDescriptorObject *object, unsigned int cu
     if (object->getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
     {
         result.second = {};
-        result.second.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        result.second.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         result.second.imageView = object->getImageView();
         result.second.sampler = object->getSampler();
     }

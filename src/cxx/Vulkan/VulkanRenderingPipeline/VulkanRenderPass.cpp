@@ -150,7 +150,7 @@ VulkanRenderPass::prepareColorAttachmentDescription(VkFormat *imageFormat, int f
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = output ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        colorAttachment.finalLayout = output ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_GENERAL;
         result.push_back(colorAttachment);
     }
     return result;
@@ -179,7 +179,7 @@ void VulkanRenderPass::createRenderPass(VkFormat *imageFormat, int formatCount, 
     depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
     std::vector<VkAttachmentDescription> attachments = prepareColorAttachmentDescription(imageFormat, formatCount,
                                                                                          attachImagesAmount, output);
@@ -187,7 +187,7 @@ void VulkanRenderPass::createRenderPass(VkFormat *imageFormat, int formatCount, 
 
     VkAttachmentReference depthAttachmentRef{};
     depthAttachmentRef.attachment = attachments.size();
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_GENERAL;
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;

@@ -50,13 +50,13 @@ public:
 
     VkImageView getView();
 
-    void copyToImage(VulkanImage *target);
+    void copyToImage(VulkanImage *target, bool isDepth);
 
-    void copyToImage(VulkanImage *target, VkCommandBuffer cmd);
+    void copyToImage(VulkanImage *target, VkCommandBuffer cmd, bool isDepth);
 
-    void copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd);
+    void copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd, bool isDepth);
 
-    void copyFromImage(VkImage image, VkImageLayout imageLayout);
+    void copyFromImage(VkImage image, VkImageLayout imageLayout, bool isDepth);
 
     void clearImage(float r, float g, float b, float a);
 

@@ -9,8 +9,8 @@ VulkanImage *VulkanImage::createImage(VulkanDevice *device, unsigned int width, 
     VkDeviceMemory imageMemory;
     createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
     transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, width, height);
+                          VK_IMAGE_LAYOUT_GENERAL);
+    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_GENERAL, width, height);
 }
 
 VulkanImage *VulkanImage::createImageWithFormat(VulkanDevice *device, unsigned int width, unsigned int height, VkFormat format)
@@ -22,8 +22,8 @@ VulkanImage *VulkanImage::createImageWithFormat(VulkanDevice *device, unsigned i
     VkDeviceMemory imageMemory;
     createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
     transitionImageLayout(device, image, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    return new VulkanImage(image, device, imageMemory, format, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, width, height);
+                          VK_IMAGE_LAYOUT_GENERAL);
+    return new VulkanImage(image, device, imageMemory, format, VK_IMAGE_LAYOUT_GENERAL, width, height);
 }
 
 VulkanImage *VulkanImage::loadTexture(const char *pathToTexture, VulkanDevice *device)
@@ -69,12 +69,12 @@ VulkanImage *VulkanImage::loadBinTexture(VulkanDevice *device, const char *image
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     device->copyBufferToImage(stagingBuffer, image, imageWidth, imageHeight, 1);
     transitionImageLayout(device, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                          VK_IMAGE_LAYOUT_GENERAL);
 
     vkDestroyBuffer(device->getDevice(), stagingBuffer, nullptr);
     vkFreeMemory(device->getDevice(), stagingBufferMemory, nullptr);
 
-    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, imageWidth, imageHeight);
+    return new VulkanImage(image, device, imageMemory, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_GENERAL, imageWidth, imageHeight);
 }
 
 void VulkanImage::createImageMemory(VulkanDevice *device, VkMemoryPropertyFlags properties,
@@ -129,22 +129,18 @@ void VulkanImage::transitionImageLayout(VulkanDevice *device, VkImage image, VkF
              newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
     {
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
-    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    else
     {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    }
-    else
-    {
-        throw std::invalid_argument("unsupported layout transition!");
     }
 
     vkCmdPipelineBarrier(
@@ -185,19 +181,19 @@ VkImageView VulkanImage::getView()
     return view;
 }
 
-void VulkanImage::copyToImage(VulkanImage *target)
+void VulkanImage::copyToImage(VulkanImage *target, bool isDepth)
 {
     VkCommandBuffer cmd = device->beginSingleTimeCommands();
-    copyToImage(target, cmd);
+    copyToImage(target, cmd, isDepth);
     device->endSingleTimeCommands(cmd);
 }
 
-void VulkanImage::copyToImage(VulkanImage *target, VkCommandBuffer cmd)
+void VulkanImage::copyToImage(VulkanImage *target, VkCommandBuffer cmd, bool isDepth)
 {
     imageCopyRegion = {};
-    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageCopyRegion.srcSubresource.aspectMask = isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT ;
     imageCopyRegion.srcSubresource.layerCount = 1;
-    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageCopyRegion.dstSubresource.aspectMask = isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     imageCopyRegion.dstSubresource.layerCount = 1;
     imageCopyRegion.extent.width = width;
     imageCopyRegion.extent.height = height;
@@ -210,12 +206,12 @@ void VulkanImage::copyToImage(VulkanImage *target, VkCommandBuffer cmd)
         &imageCopyRegion);
 }
 
-void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd)
+void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout, VkCommandBuffer cmd, bool isDepth)
 {
     imageCopyRegion = {};
-    imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageCopyRegion.srcSubresource.aspectMask = isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     imageCopyRegion.srcSubresource.layerCount = 1;
-    imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+    imageCopyRegion.dstSubresource.aspectMask = isDepth? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     imageCopyRegion.dstSubresource.layerCount = 1;
     imageCopyRegion.extent.width = width;
     imageCopyRegion.extent.height = height;
@@ -228,10 +224,10 @@ void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout, VkComm
         &imageCopyRegion);
 }
 
-void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout)
+void VulkanImage::copyFromImage(VkImage image, VkImageLayout imageLayout, bool isDepth)
 {
     VkCommandBuffer cmd = device->beginSingleTimeCommands();
-    copyFromImage(image, imageLayout, cmd);
+    copyFromImage(image, imageLayout, cmd, isDepth);
     device->endSingleTimeCommands(cmd);
 }
 
@@ -272,7 +268,7 @@ void VulkanImage::resize(int width, int height)
                         image, true);
     createImageMemory(device, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, image);
     transitionImageLayout(device, image, this->format, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                          VK_IMAGE_LAYOUT_GENERAL);
     view = device->createImageView(image, this->format);
 }
 

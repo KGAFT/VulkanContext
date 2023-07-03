@@ -2,9 +2,9 @@
 
 VulkanEndRenderPipeline::VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyncManager *syncManager, VulkanShader *shader,
                                                  PipelineEndConfig *endConfig, int startFrameBufferWidth, int startFrameBufferHeight,
-                                                 std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat, bool alphaBlending, VkCullModeFlags culling)
+                                                 std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup)
     : imagePerStepAmount(imagePerStepAmount), device(device), imageFormat(imageFormat),
-      syncManager(syncManager), shader(shader), currentWidth(startFrameBufferWidth), currentHeight(startFrameBufferHeight), alphaBlendEnabled(alphaBlending), culling(culling)
+      syncManager(syncManager), shader(shader), currentWidth(startFrameBufferWidth), currentHeight(startFrameBufferHeight), alphaBlendEnabled(alphaBlending), culling(culling), depthSetup(depthSetup)
 {
     this->imageViews.clear();
     for (auto item : imageViews)
@@ -12,7 +12,7 @@ VulkanEndRenderPipeline::VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyn
         this->imageViews.push_back(item);
     }
     createRenderPass(startFrameBufferWidth, startFrameBufferHeight, imagePerStepAmount, imageFormat);
-    createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight, alphaBlendEnabled, culling);
+    createGraphicsPipeline(endConfig, startFrameBufferWidth, startFrameBufferHeight, alphaBlendEnabled, culling, depthSetup);
     createControl();
     if (configurer->getDescriptorSetLayout() != VK_NULL_HANDLE)
     {
@@ -114,7 +114,7 @@ void VulkanEndRenderPipeline::resized(int width, int height, std::vector<VkImage
     }
     renderPass->recreate(imageViews, width, height, this->imagePerStepAmount, &this->imageFormat, 1);
     graphicsPipeline->recreate(
-        width, height, renderPass->getAttachmentCount(), alphaBlendEnabled,culling,
+        width, height, renderPass->getAttachmentCount(), alphaBlendEnabled,culling,depthSetup,
         renderPass);
     control->setRenderPass(renderPass);
 }
@@ -210,12 +210,12 @@ void VulkanEndRenderPipeline::createRenderPass(int width, int height, int imageP
                                           nullptr);
 }
 
-void VulkanEndRenderPipeline::createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending, VkCullModeFlags culling)
+void VulkanEndRenderPipeline::createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup)
 {
     configurer = new GraphicsPipelineConfigurer(device, endConfig);
     graphicsPipeline = new VulkanGraphicsPipeline(device, configurer, shader,
                                                   width, height,
-                                                  renderPass->getAttachmentCount(), alphaBlending, culling,
+                                                  renderPass->getAttachmentCount(), alphaBlending, culling, depthSetup,
                                                   renderPass);
 }
 

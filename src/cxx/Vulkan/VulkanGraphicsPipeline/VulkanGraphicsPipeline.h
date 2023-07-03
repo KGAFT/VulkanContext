@@ -13,7 +13,7 @@ private:
 public:
     VulkanGraphicsPipeline(VulkanDevice *device,
                            GraphicsPipelineConfigurer *configurer, VulkanShader *shader,
-                           unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VulkanRenderPass *renderPass);
+                           unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup, VulkanRenderPass *renderPass);
 
 private:
     VkPipeline graphicsPipeline;
@@ -31,7 +31,7 @@ public:
 
     ~VulkanGraphicsPipeline();
 
-    void recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VulkanRenderPass *renderPass);
+    void recreate(unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup, VulkanRenderPass *renderPass);
 
     void destroy();
 

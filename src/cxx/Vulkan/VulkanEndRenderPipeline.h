@@ -24,7 +24,7 @@ class VulkanEndRenderPipeline
 public:
     VulkanEndRenderPipeline(VulkanDevice *device, VulkanSyncManager *syncManager, VulkanShader *shader,
                             PipelineEndConfig *endConfig, int startFrameBufferWidth, int startFrameBufferHeight,
-                            std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat, bool alphaBlending, VkCullModeFlags culling);
+                            std::vector<VkImageView> &imageViews, int imagePerStepAmount, VkFormat imageFormat, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup);
 
 private:
     VulkanDevice *device;
@@ -52,6 +52,7 @@ private:
     VulkanPushConstantManager *manager;
     bool alphaBlendEnabled = false;
     VkCullModeFlags culling;
+    VkCompareOp depthSetup;
 public:
     /**
      * Update immediate  data before this
@@ -97,7 +98,7 @@ private:
 
     void createRenderPass(int width, int height, int imagePerStepAmount, VkFormat imageFormat);
 
-    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending, VkCullModeFlags culling);
+    void createGraphicsPipeline(PipelineEndConfig *endConfig, int width, int height, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup);
 
     void createControl();
 };

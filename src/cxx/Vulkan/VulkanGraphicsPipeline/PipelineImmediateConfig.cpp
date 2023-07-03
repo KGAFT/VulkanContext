@@ -1,6 +1,6 @@
 #include "PipelineImmediateConfig.h"
 
- void PipelineConfiguration::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling)
+ void PipelineConfiguration::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo, unsigned int width, unsigned int height, int attachmentCount, bool alphaBlending, VkCullModeFlags culling, VkCompareOp depthSetup)
     {
 
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -77,7 +77,7 @@
         configInfo.depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         configInfo.depthStencilInfo.depthTestEnable = VK_TRUE;
         configInfo.depthStencilInfo.depthWriteEnable = VK_TRUE;
-        configInfo.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+        configInfo.depthStencilInfo.depthCompareOp = depthSetup;
         configInfo.depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
         configInfo.depthStencilInfo.minDepthBounds = 0.0f;
         configInfo.depthStencilInfo.maxDepthBounds = 1.0f;

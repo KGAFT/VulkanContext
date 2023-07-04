@@ -22,11 +22,11 @@ public:
 
     void destroy();
 
-
     void draw(VkCommandBuffer commandBuffer);
 
     void bind(VkCommandBuffer commandBuffer);
 
+    void recreate(size_t stepSize, unsigned int verticesAmount, void *data);
 private:
     void createVertexBuffers(void *vertices, size_t stepSize, unsigned int verticesAmount);
 };

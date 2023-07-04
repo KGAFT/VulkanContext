@@ -29,6 +29,12 @@ void VertexBuffer::bind(VkCommandBuffer commandBuffer)
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 }
 
+void VertexBuffer::recreate(size_t stepSize, unsigned int verticesAmount, void *data)
+{
+    destroy();
+    createVertexBuffers(data, stepSize, verticesAmount);
+}
+
 void VertexBuffer::createVertexBuffers(void *vertices, size_t stepSize, unsigned int verticesAmount)
 {
     VkDeviceSize bufferSize = stepSize * verticesAmount;

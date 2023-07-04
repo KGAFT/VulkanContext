@@ -28,6 +28,7 @@ public:
 
     void draw(VkCommandBuffer commandBuffer);
 
+    void recreate(unsigned int *indices, unsigned int indicesAmount);
 private:
     void createIndexBuffer(unsigned int *indices, unsigned int amount);
 };

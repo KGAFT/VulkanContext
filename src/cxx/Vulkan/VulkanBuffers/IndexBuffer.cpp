@@ -26,6 +26,12 @@ void IndexBuffer::draw(VkCommandBuffer commandBuffer)
     vkCmdDrawIndexed(commandBuffer, indicesCount, 1, 0, 0, 0);
 }
 
+void IndexBuffer::recreate(unsigned int *indices, unsigned int indicesAmount)
+{
+    destroy();
+    createIndexBuffer(indices, indicesAmount);
+}
+
 void IndexBuffer::createIndexBuffer(unsigned int *indices, unsigned int amount)
 {
     indicesCount = amount;

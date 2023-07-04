@@ -7,11 +7,16 @@ IndexBuffer::IndexBuffer(VulkanDevice *device, unsigned int *indices, unsigned i
 
 IndexBuffer::~IndexBuffer()
 {
-    destroy();
+  if(!destroyed){
+      destroy();
+   }
+
+
 }
 
 void IndexBuffer::destroy()
 {
+  destroyed = true;
     vkDestroyBuffer(device->getDevice(), indexBuffer, nullptr);
     vkFreeMemory(device->getDevice(), indexBufferMemory, nullptr);
 }
@@ -28,7 +33,9 @@ void IndexBuffer::draw(VkCommandBuffer commandBuffer)
 
 void IndexBuffer::recreate(unsigned int *indices, unsigned int indicesAmount)
 {
+
     destroy();
+    destroyed = false;
     createIndexBuffer(indices, indicesAmount);
 }
 

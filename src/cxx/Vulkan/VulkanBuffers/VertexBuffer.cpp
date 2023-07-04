@@ -8,11 +8,16 @@ VertexBuffer::VertexBuffer(size_t stepSize, unsigned int verticesAmount, VulkanD
 
 VertexBuffer::~VertexBuffer()
 {
-    destroy();
+  if(!destroyed){
+      destroy();
+   }
+
+
 }
 
 void VertexBuffer::destroy()
 {
+  destroyed = true;
     vkDestroyBuffer(device->getDevice(), vertexBuffer, nullptr);
     vkFreeMemory(device->getDevice(), vertexBufferMemory, nullptr);
 }
@@ -31,7 +36,10 @@ void VertexBuffer::bind(VkCommandBuffer commandBuffer)
 
 void VertexBuffer::recreate(size_t stepSize, unsigned int verticesAmount, void *data)
 {
-    destroy();
+  if(!destroyed){
+      destroy();
+    }
+    destroyed = false;
     createVertexBuffers(data, stepSize, verticesAmount);
 }
 

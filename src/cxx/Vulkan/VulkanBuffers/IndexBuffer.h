@@ -18,7 +18,7 @@ private:
     VkDeviceMemory indexBufferMemory;
     VulkanDevice *device;
     unsigned int indicesCount;
-
+    bool destroyed;
 public:
     ~IndexBuffer();
 

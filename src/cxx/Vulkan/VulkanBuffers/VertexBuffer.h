@@ -15,7 +15,7 @@ private:
     VkDeviceMemory vertexBufferMemory;
     VulkanDevice *device;
     unsigned int verticesAmount;
-
+    bool destroyed = false;
 public:
 
     ~VertexBuffer();

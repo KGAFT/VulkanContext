@@ -163,7 +163,17 @@ VulkanImage::VulkanImage(VkImage image, VulkanDevice *device,
                                                                                                height(height),
                                                                                                imageLayout(imageLayout)
 {
-    view = device->createImageView(image, format);
+  view = device->createImageView(image, format);
+}
+
+int VulkanImage::getWidth()
+{
+  return width;
+}
+
+int VulkanImage::getHeight()
+{
+  return height;
 }
 
 VkImage VulkanImage::getImage()

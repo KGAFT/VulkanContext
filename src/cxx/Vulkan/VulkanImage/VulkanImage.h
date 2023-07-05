@@ -69,4 +69,6 @@ public:
     void destroy();
 
     ~VulkanImage();
+    int getWidth();
+    int getHeight();
 };

@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include "VulkanSync/VulkanSyncManager.h"
 #include "VulkanDevice/VulkanDevice.h"
-#include "VulkanGraphicsPipeline/VulkanShader/VulkanShader.h"
+#include "VulkanShader/VulkanShader.h"
 #include "VulkanGraphicsPipeline/PipelineEndConfiguration.h"
 #include "VulkanImmediateShaderData/UniformBuffers/VulkanUniformBuffer.h"
 #include "VulkanImmediateShaderData/VulkanSampler/VulkanSampler.h"

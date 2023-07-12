@@ -4,8 +4,12 @@ VulkanDescriptors::VulkanDescriptors(VulkanDevice *device, PipelineEndConfig *en
 {
     this->device = device;
     std::vector<VkDescriptorPoolSize> sizes;
+
     sizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000});
     sizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000});
+    sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000});
+    sizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000});
+
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = sizes.size();

@@ -3,8 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <map>
-#include "../../../Util/ShaderConfParser.h"
-#include "../../VulkanDevice/VulkanDevice.h"
+#include "Util/ShaderConfParser.h"
+#include "Vulkan/VulkanDevice/VulkanDevice.h"
 
 class VulkanShader
 {

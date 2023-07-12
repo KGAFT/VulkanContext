@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include "PipelineImmediateConfig.h"
-#include "VulkanShader/VulkanShader.h"
+#include "../VulkanShader/VulkanShader.h"
 #include "GraphicsPipelineConfigurer.h"
 #include "../VulkanRenderingPipeline/VulkanRenderPass.h"
 

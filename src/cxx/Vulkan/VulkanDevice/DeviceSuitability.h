@@ -18,20 +18,20 @@ namespace DeviceSuitability {
     struct QueueFamilyIndices {
         uint32_t graphicsFamily;
         uint32_t presentFamily;
+        uint32_t computeFamily;
         bool graphicsFamilyHasValue = false;
         bool presentFamilyHasValue = false;
-
-        bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
+        bool computeFamilyPresent = false;
+        bool isComplete(bool needCompute) { return (graphicsFamilyHasValue && presentFamilyHasValue && !needCompute) || (graphicsFamilyHasValue && presentFamilyHasValue && needCompute && computeFamilyPresent); }
     };
 
 
-    DeviceSuitability::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-    
+    DeviceSuitability::QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, bool needCompute);
 
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-    bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+    bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, bool needCompute);
 
 }

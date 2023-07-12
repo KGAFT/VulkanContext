@@ -9,6 +9,7 @@
 #define VERTEX_SHADER 0
 #define FRAGMENT_SHADER 1
 #define GEOMETRY_SHADER 2
+#define COMPUTE_SHADER 3
 
 struct ShaderInfo
 {

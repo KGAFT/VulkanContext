@@ -1,7 +1,7 @@
 #include "VulkanDevice.h"
 
 std::map<VkPhysicalDevice, VkPhysicalDeviceProperties>
-VulkanDevice::enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR renderSurface)
+VulkanDevice::enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR renderSurface, bool acquireCompute)
 {
     std::map<VkPhysicalDevice, VkPhysicalDeviceProperties> result;
     unsigned int deviceCount = 0;
@@ -15,7 +15,7 @@ VulkanDevice::enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR render
 
     for (VkPhysicalDevice device : devices)
     {
-        if (DeviceSuitability::isDeviceSuitable(device, renderSurface))
+        if (DeviceSuitability::isDeviceSuitable(device, renderSurface, acquireCompute))
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
@@ -25,17 +25,17 @@ VulkanDevice::enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR render
     return result;
 }
 
-VulkanDevice::VulkanDevice(VkPhysicalDevice deviceToCreate, VkSurfaceKHR renderSurface, VkInstance vkInstance, bool logDevice)
+VulkanDevice::VulkanDevice(VkPhysicalDevice deviceToCreate, VkSurfaceKHR renderSurface, VkInstance vkInstance, bool logDevice, bool acquireCompute)
     : deviceToCreate(deviceToCreate), renderSurface(renderSurface), vkInstance(vkInstance)
 {
-    if (!DeviceSuitability::isDeviceSuitable(deviceToCreate, renderSurface))
+    if (!DeviceSuitability::isDeviceSuitable(deviceToCreate, renderSurface, acquireCompute))
     {
         throw std::runtime_error("Error, you cannot create unsupported vulkan device");
     }
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(deviceToCreate, &physicalDeviceProperties);
     this->sampleCount = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-    createLogicalDevice(logDevice);
+    createLogicalDevice(logDevice, acquireCompute);
     createCommandPool();
 }
 
@@ -327,13 +327,13 @@ void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-void VulkanDevice::createLogicalDevice(bool logDevice)
+void VulkanDevice::createLogicalDevice(bool logDevice, bool acquireCompute)
 {
     DeviceSuitability::QueueFamilyIndices indices = DeviceSuitability::findQueueFamilies(deviceToCreate,
-                                                                                         renderSurface);
+                                                                                         renderSurface, acquireCompute);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
+    std::set<uint32_t> uniqueQueueFamilies = acquireCompute? std::set<uint32_t>{indices.graphicsFamily, indices.presentFamily, indices.computeFamily} : std::set<uint32_t>{indices.graphicsFamily, indices.presentFamily};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -374,6 +374,9 @@ void VulkanDevice::createLogicalDevice(bool logDevice)
 
     vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
+    if(acquireCompute){
+        vkGetDeviceQueue(device, indices.computeFamily, 0, &computeFamily);
+    }
 }
 
 VkSurfaceKHR VulkanDevice::getRenderSurface()
@@ -385,7 +388,7 @@ void VulkanDevice::createCommandPool()
 {
     DeviceSuitability::QueueFamilyIndices queueFamilyIndices = DeviceSuitability::findQueueFamilies(
         deviceToCreate,
-        renderSurface);
+        renderSurface, computeFamily);
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -397,4 +400,8 @@ void VulkanDevice::createCommandPool()
     {
         throw std::runtime_error("failed to create command pool!");
     }
+}
+
+VkQueue VulkanDevice::getComputeQueue() {
+    return computeFamily;
 }

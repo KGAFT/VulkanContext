@@ -75,7 +75,7 @@ void VulkanSwapChain::createSwapChain()
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     DeviceSuitability::QueueFamilyIndices indices = DeviceSuitability::findQueueFamilies(
-        device->getDeviceToCreate(), device->getRenderSurface());
+        device->getDeviceToCreate(), device->getRenderSurface(), device->getComputeQueue());
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily, indices.presentFamily};
 
     if (indices.graphicsFamily != indices.presentFamily)

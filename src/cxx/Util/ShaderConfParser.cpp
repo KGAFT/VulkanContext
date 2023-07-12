@@ -44,5 +44,8 @@ int ShaderConfParser::getShaderType(std::string &rawType)
     {
         return GEOMETRY_SHADER;
     }
+    if(!std::strcmp(rawType.c_str(), "COMPUTE_SHADER")){
+        return COMPUTE_SHADER;
+    }
     return -1;
 }

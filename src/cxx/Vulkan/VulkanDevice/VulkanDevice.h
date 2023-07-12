@@ -13,16 +13,17 @@ class VulkanDevice
 {
 public:
     static std::map<VkPhysicalDevice, VkPhysicalDeviceProperties>
-    enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR renderSurface);
+    enumerateSupportedDevices(VkInstance instance, VkSurfaceKHR renderSurface, bool acquireCompute);
 
 public:
-    VulkanDevice(VkPhysicalDevice deviceToCreate, VkSurfaceKHR renderSurface, VkInstance vkInstance, bool logDevice);
+    VulkanDevice(VkPhysicalDevice deviceToCreate, VkSurfaceKHR renderSurface, VkInstance vkInstance, bool logDevice, bool acquireCompute);
 
 private:
     VkPhysicalDevice deviceToCreate;
     VkDevice device;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+    VkQueue computeFamily = VK_NULL_HANDLE;
     VkInstance vkInstance;
     VkCommandPool commandPool;
     VkSampleCountFlags sampleCount;
@@ -61,6 +62,8 @@ public:
 
     VkQueue getPresentQueue();
 
+    VkQueue getComputeQueue();
+
     VkInstance getVkInstance();
 
     VkCommandPool getCommandPool();
@@ -81,7 +84,7 @@ public:
     VkSurfaceKHR getRenderSurface();
 
 private:
-    void createLogicalDevice(bool logDevice);
+    void createLogicalDevice(bool logDevice, bool acquireCompute);
 
     void createCommandPool();
 };

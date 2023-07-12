@@ -1,6 +1,6 @@
 #include "DeviceSuitability.h"
 
-DeviceSuitability::QueueFamilyIndices DeviceSuitability::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+DeviceSuitability::QueueFamilyIndices DeviceSuitability::findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, bool needCompute)
 {
     DeviceSuitability::QueueFamilyIndices indices;
 
@@ -16,6 +16,12 @@ DeviceSuitability::QueueFamilyIndices DeviceSuitability::findQueueFamilies(VkPhy
             indices.graphicsFamily = i;
             indices.graphicsFamilyHasValue = true;
         }
+
+        if(needCompute && queueFamily.queueCount>0 && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)){
+            indices.computeFamily = i;
+            indices.computeFamilyPresent = true;
+        }
+
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
         if (queueFamily.queueCount > 0 && presentSupport)
@@ -23,11 +29,10 @@ DeviceSuitability::QueueFamilyIndices DeviceSuitability::findQueueFamilies(VkPhy
             indices.presentFamily = i;
             indices.presentFamilyHasValue = true;
         }
-        if (indices.isComplete())
+        if (indices.isComplete(needCompute))
         {
             break;
         }
-
         i++;
     }
 
@@ -81,9 +86,9 @@ DeviceSuitability::SwapChainSupportDetails DeviceSuitability::querySwapChainSupp
     return details;
 }
 
-bool DeviceSuitability::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
+bool DeviceSuitability::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, bool needCompute)
 {
-    QueueFamilyIndices indices = findQueueFamilies(device, surface);
+    QueueFamilyIndices indices = findQueueFamilies(device, surface, needCompute);
     bool extensionsSupported = checkDeviceExtensionSupport(device);
     bool swapChainAdequate = false;
     if (extensionsSupported)
@@ -93,6 +98,6 @@ bool DeviceSuitability::isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR s
     }
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-    return indices.isComplete() && extensionsSupported && swapChainAdequate &&
+    return indices.isComplete(needCompute) && extensionsSupported && swapChainAdequate &&
            supportedFeatures.samplerAnisotropy;
 }

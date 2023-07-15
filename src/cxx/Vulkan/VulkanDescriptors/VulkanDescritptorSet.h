@@ -9,6 +9,9 @@
 #include "../VulkanGraphicsPipeline/PipelineEndConfiguration.h"
 #include "../VulkanImmediateShaderData/VulkanSampler/VulkanSampler.h"
 #include "../VulkanImmediateShaderData/UniformBuffers/VulkanUniformBuffer.h"
+#include "Vulkan/VulkanImmediateShaderData/StorageBuffer/VulkanStorageBuffer.h"
+#include "Vulkan/VulkanComputePipeline/ComputePipelineEndConfig.h"
+
 class VulkanDescriptorSet
 {
     friend class VulkanDescriptors;
@@ -19,9 +22,9 @@ private:
     std::vector<VkDescriptorSet> descriptorSets;
     std::vector<VulkanUniformBuffer *> uniformBuffers;
     std::vector<VulkanSampler *> samplers;
+    std::vector<VulkanStorageBuffer*> storageBuffers;
     VulkanDevice *device;
     void *attachInstance = nullptr;
-    void initImmediate(PipelineEndConfig *endConfig);
     bool destroyed = false;
 
 public:
@@ -35,7 +38,10 @@ public:
 
     std::vector<VulkanSampler *> &getSamplers();
 
+    std::vector<VulkanStorageBuffer *> &getStorageBuffers();
+
 private:
     std::pair<VkDescriptorBufferInfo, VkDescriptorImageInfo>
     getChildOfObject(IDescriptorObject *object, unsigned int currentInstance);
+    void initImmediate(PipelineEndConfig *endConfig, ComputePipelineEndConfig* cEndConfig);
 };

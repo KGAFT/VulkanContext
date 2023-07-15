@@ -8,13 +8,16 @@
 
 struct StorageBufferInfo{
     unsigned int binding;
+    size_t size;
+    VkBufferUsageFlags usageFlags;
 };
 
-struct StorageImageBinding{
+struct UniformBufferInfo{
     unsigned int binding;
+    size_t size;
 };
 
 struct ComputePipelineEndConfig{
     std::vector<StorageBufferInfo> storageBuffers;
-    std::vector<StorageImageBinding> storageImages;
+    std::vector<UniformBufferInfo> uniformBuffers;
 };

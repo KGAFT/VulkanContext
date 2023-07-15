@@ -4,18 +4,33 @@ VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice *device) : device(device)
 {
 }
 
-void VulkanDescriptorSet::initImmediate(PipelineEndConfig *endConfig)
+void VulkanDescriptorSet::initImmediate(PipelineEndConfig *endConfig, ComputePipelineEndConfig* cEndConfig)
 {
-    for (const auto &item : endConfig->samplers)
+    if(endConfig!= nullptr)
     {
-        auto *sampler = new VulkanSampler(device, item.binding);
-        samplers.push_back(sampler);
+        for (const auto &item : endConfig->samplers)
+        {
+            auto *sampler = new VulkanSampler(device, item.binding);
+            samplers.push_back(sampler);
+        }
+        for (const auto &item : endConfig->uniformBuffers)
+        {
+            auto *uniformBuffer = new VulkanUniformBuffer(device, item.size, item.shaderStages, item.binding, descriptorSets.size());
+            uniformBuffers.push_back(uniformBuffer);
+        }
     }
-    for (const auto &item : endConfig->uniformBuffers)
-    {
-        auto *uniformBuffer = new VulkanUniformBuffer(device, item.size, item.shaderStages, item.binding, descriptorSets.size());
-        uniformBuffers.push_back(uniformBuffer);
+    else{
+        for (const auto &item: cEndConfig->storageBuffers){
+            auto* storageBuffer = new VulkanStorageBuffer(device, item.binding, item.size, item.usageFlags, descriptorSets.size());
+            storageBuffers.push_back(storageBuffer);
+        }
+        for (const auto &item : cEndConfig->uniformBuffers)
+        {
+            auto *uniformBuffer = new VulkanUniformBuffer(device, item.size, item.shaderStages, item.binding, descriptorSets.size());
+            uniformBuffers.push_back(uniformBuffer);
+        }
     }
+
 }
 
 void VulkanDescriptorSet::updateDescriptorSet(unsigned int currentDescriptor)
@@ -41,6 +56,21 @@ void VulkanDescriptorSet::updateDescriptorSet(unsigned int currentDescriptor)
     {
         auto *info = new std::pair<VkDescriptorBufferInfo, VkDescriptorImageInfo>(
             getChildOfObject(item, currentDescriptor));
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = descriptorSets[currentDescriptor];
+        write.dstBinding = item->getBinding();
+        write.dstArrayElement = 0;
+        write.descriptorType = item->getDescriptorType();
+        write.descriptorCount = 1;
+        write.pBufferInfo = &info->first;
+        writes.push_back(write);
+        infos.push_back(info);
+    }
+
+    for (const auto &item: storageBuffers){
+        auto *info = new std::pair<VkDescriptorBufferInfo, VkDescriptorImageInfo>(
+                getChildOfObject(item, currentDescriptor));
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.dstSet = descriptorSets[currentDescriptor];
@@ -91,21 +121,25 @@ std::pair<VkDescriptorBufferInfo, VkDescriptorImageInfo>
 VulkanDescriptorSet::getChildOfObject(IDescriptorObject *object, unsigned int currentInstance)
 {
     std::pair<VkDescriptorBufferInfo, VkDescriptorImageInfo> result;
-    if (object->getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-    {
-        result.second = {};
-        result.second.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        result.second.imageView = object->getImageView();
-        result.second.sampler = object->getSampler();
-    }
-    else
-    {
-        result.first = {};
-        result.first.buffer = object->getBuffer(currentInstance);
-        result.first.offset = 0;
-        result.first.range = object->getBufferSize();
+    switch (object->getDescriptorType()) {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            result.second = {};
+            result.second.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            result.second.imageView = object->getImageView();
+            result.second.sampler = object->getSampler();
+            break;
+        default:
+            result.first = {};
+            result.first.buffer = object->getBuffer(currentInstance);
+            result.first.offset = 0;
+            result.first.range = object->getBufferSize();
+            break;
     }
     return result;
+}
+
+std::vector<VulkanStorageBuffer *> &VulkanDescriptorSet::getStorageBuffers() {
+    return storageBuffers;
 }
 
 

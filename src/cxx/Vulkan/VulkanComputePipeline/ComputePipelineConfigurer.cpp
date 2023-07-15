@@ -13,16 +13,16 @@ ComputePipelineConfigurer::ComputePipelineConfigurer(VulkanDevice* device, Compu
 
 void ComputePipelineConfigurer::createDescriptorSetLayout() {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    for (const auto &item: endConfig.storageImages){
-        bindings.push_back({item.binding, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr,});
-    }
     for (const auto &item: endConfig.storageBuffers){
         bindings.push_back({item.binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
+    }
+    for (const auto &item: endConfig.uniformBuffers){
+        bindings.push_back({item.binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
     }
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = bindings.size();
-    layoutInfo.pBindings(bindings.data());
+    layoutInfo.pBindings = bindings.data();
     if(vkCreateDescriptorSetLayout(device->getDevice(), &layoutInfo, nullptr, &descriptorSetLayout)!=VK_SUCCESS){
         throw std::runtime_error("failed to create descriptor set layout");
     }

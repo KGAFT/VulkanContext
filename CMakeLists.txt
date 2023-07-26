@@ -3,13 +3,20 @@ project(VulkanContext)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(VulkanSDKPath /usr/lib/VulkanSDK/x86_64)
+
 file(GLOB_RECURSE H_FILES src/cxx/*.h)
 file(GLOB_RECURSE CPP_FILES src/cxx/*.cpp)
+
 add_library(VulkanContext ${H_FILES} ${CPP_FILES})
+
 add_subdirectory(submodules/glfw)
+
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src/cxx/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(GLOB_RECURSE UNNECESSARY_CPP ${CMAKE_CURRENT_BINARY_DIR}/include/*.cpp)
 file(REMOVE ${UNNECESSARY_CPP})
+
 if(WIN32)
     target_include_directories(VulkanContext PUBLIC src/cxx ${VulkanSDKPath}/Include)
     target_link_directories(VulkanContext PUBLIC ${VulkanSDKPath}/bin ${VulkanSDKPath}/lib)

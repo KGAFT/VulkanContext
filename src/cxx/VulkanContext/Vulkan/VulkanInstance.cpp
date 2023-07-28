@@ -36,12 +36,14 @@ VkResult VulkanInstance::createInstance(VulkanInstance **pOutput) {
         if(res!=VK_SUCCESS){
             return res;
         }
+        *pOutput = new VulkanInstance();
         if(!builderInstance->enabledLayers.empty()){
             (*pOutput)->logger = new VulkanLogger;
             (*pOutput)->logger->init(instance);
         }
-        *pOutput = new VulkanInstance();
+
         (*pOutput)->instance = instance;
+        builderInstance->clear();
         return res;
     }
     throw BuilderNotPopulatedException("Error, you have not specified application info");
@@ -96,6 +98,7 @@ VulkanInstanceBuilder::VulkanInstanceBuilder() {
     createInfo.pApplicationInfo = &appInfo;
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pNext = nullptr;
+    createInfo.flags = 0;
 }
 
 VulkanInstanceBuilder *
@@ -136,6 +139,24 @@ VulkanInstanceBuilder *VulkanInstanceBuilder::setInstanceFlags(VkInstanceCreateF
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pNext = nullptr;
     return this;
+}
+
+void VulkanInstanceBuilder::clear() {
+    this->createInfo.enabledLayerCount = 0;
+    this->createInfo.flags = 0;
+    this->createInfo.pNext = nullptr;
+    this->createInfo.enabledExtensionCount = 0;
+    this->createInfo.ppEnabledExtensionNames = nullptr;
+    this->createInfo.ppEnabledLayerNames = nullptr;
+    this->appInfo.pNext = nullptr;
+    this->appInfo.pEngineName = nullptr;
+    this->appInfo.pApplicationName = nullptr;
+    this->appInfo.applicationVersion = 0;
+    this->appInfo.apiVersion = 0;
+    this->appInfo.engineVersion =0;
+    this->appInfoEnabled = false;
+    this->enabledLayers.clear();
+    this->enabledExtensions.clear();
 }
 
 

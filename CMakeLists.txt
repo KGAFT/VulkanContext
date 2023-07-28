@@ -3,8 +3,6 @@ project(VulkanContext)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(VulkanSDKPath /usr/lib/VulkanSDK/x86_64)
-
 file(GLOB_RECURSE H_FILES src/cxx/*.h)
 file(GLOB_RECURSE CPP_FILES src/cxx/*.cpp)
 

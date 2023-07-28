@@ -62,4 +62,6 @@ public:
     VulkanInstanceBuilder* addLayer(const char* layer);
 
     VulkanInstanceBuilder* setInstanceFlags(VkInstanceCreateFlags flags);
+private:
+    void clear();
 };

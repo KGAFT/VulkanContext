@@ -10,7 +10,7 @@ VkBool32 VulkanLogger::debugCallback(
 {
 
     for(auto& el : loggers){
-        el->debugCallback(messageSeverity, messageType, pCallbackData, pUserData);
+        el->callback(messageSeverity, messageType, pCallbackData, pUserData);
     }
 
     return VK_FALSE;
@@ -71,6 +71,8 @@ void VulkanLogger::describeLogger(VkDebugUtilsMessengerCreateInfoEXT &createInfo
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr;
+    createInfo.flags = 0;
+    createInfo.pNext = nullptr;
 }
 
 VkResult VulkanLogger::CreateDebugUtilsMessengerEXT(

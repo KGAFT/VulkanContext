@@ -14,7 +14,6 @@ public abstract class DestroyableObject {
             destroy();
         }
         super.finalize();
-        
     }
     
 }

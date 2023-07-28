@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanLogger;
 
+import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -11,7 +12,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
+public class VulkanLogger extends DestroyableObject implements VkDebugUtilsMessengerCallbackEXTI {
     public void describeLogger(MemoryStack stack, VkDebugUtilsMessengerCreateInfoEXT createInfo) {
 
         createInfo.sType$Default();
@@ -24,6 +25,7 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
     }
 
     public void initLoggerInstance(VkInstance vkInstance, VkDebugUtilsMessengerCreateInfoEXT createInfoEXT, MemoryStack stack) {
+        this.vkInstance = vkInstance;
         LongBuffer handleResult = stack.mallocLong(1);
         if (createDebugUtilsMessenger(vkInstance, createInfoEXT, handleResult)) {
             this.vkInstance = vkInstance;
@@ -34,8 +36,8 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
     private long handle;
     private VkInstance vkInstance;
     private ArrayList<IVulkanLoggerCallback> callbacks = new ArrayList<>();
-    
-    public VulkanLogger(){
+
+    public VulkanLogger() {
 
     }
 
@@ -44,25 +46,24 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
         VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
         if (callbacks.size() == 0) {
 
-            PrintStream outputStream = messageSeverity==VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT?System.err:System.out;
-            outputStream.println("Vulkan: "+callbackData.pMessageString());
-        }
-        else{
+            PrintStream outputStream = messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ? System.err : System.out;
+            outputStream.println("Vulkan: " + callbackData.pMessageString());
+        } else {
             StringBuilder textSeverity = new StringBuilder();
             StringBuilder textType = new StringBuilder();
             callbacks.forEach(callback -> {
-                switch (callback.getCallbackType()){
+                switch (callback.getCallbackType()) {
                     case RAW_VULKAN_DEFS:
                         callback.messageRaw(messageSeverity, messageType, pCallbackData, pUserData);
                         break;
                     case TRANSLATED_VULKAN_DEFS:
                         translateDebugMessageData(textSeverity, textType, messageSeverity, messageType);
-                        callback.translatedMessage(textSeverity.toString(), textType.toString(), callbackData.pMessageString(), messageSeverity==VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+                        callback.translatedMessage(textSeverity.toString(), textType.toString(), callbackData.pMessageString(), messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
                         break;
                     case BOTH_VULKAN_DEFS:
                         callback.messageRaw(messageSeverity, messageType, pCallbackData, pUserData);
                         translateDebugMessageData(textSeverity, textType, messageSeverity, messageType);
-                        callback.translatedMessage(textSeverity.toString(), textType.toString(), callbackData.pMessageString(), messageSeverity==VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+                        callback.translatedMessage(textSeverity.toString(), textType.toString(), callbackData.pMessageString(), messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
                         break;
                 }
             });
@@ -82,12 +83,12 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
         callbacks.add(callback);
     }
 
-    public void removeCallback(IVulkanLoggerCallback callback){
+    public void removeCallback(IVulkanLoggerCallback callback) {
         callbacks.remove(callback);
     }
 
-    private void translateDebugMessageData(StringBuilder textSeverity, StringBuilder textType, int messageSeverity, int messageType){
-        if(textSeverity.length()==0 && textType.length()==0){
+    private void translateDebugMessageData(StringBuilder textSeverity, StringBuilder textType, int messageSeverity, int messageType) {
+        if (textSeverity.length() == 0 && textType.length() == 0) {
             textSeverity.append(translateSeverity(messageSeverity));
             textType.append(translateType(messageType));
         }
@@ -134,5 +135,9 @@ public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
         return res;
     }
 
-
+    @Override
+    public void destroy() {
+        this.destroyed = true;
+        vkDestroyDebugUtilsMessengerEXT(vkInstance, handle, null);
+    }
 }

@@ -3,6 +3,7 @@ package com.kgaft.VulkanContext.Vulkan;
 import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
+import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
 import com.kgaft.VulkanContext.MemoryUtils.MemoryStackUtils;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import org.lwjgl.PointerBuffer;
@@ -14,7 +15,7 @@ import java.util.List;
 
 import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanInstance {
+public class VulkanInstance extends DestroyableObject {
     public static final String VK_LAYER_KHRONOS_validation = "VK_LAYER_KHRONOS_validation";
     public static final String VK_LAYER_KHRONOS_synchronization2 = "VK_LAYER_KHRONOS_synchronization2";
     public static final String VK_LAYER_KHRONOS_profiles = "VK_LAYER_KHRONOS_profiles";
@@ -130,6 +131,21 @@ public class VulkanInstance {
     public VulkanInstance(VkInstance instance, VulkanLogger logger) {
         this.instance = instance;
         this.logger = logger;
+    }
+
+    public VkInstance getInstance() {
+        return instance;
+    }
+
+    public VulkanLogger getLogger() {
+        return logger;
+    }
+
+    @Override
+    public void destroy() {
+        this.destroyed = true;
+        logger.destroy();
+        vkDestroyInstance(instance, null);
     }
 }
 

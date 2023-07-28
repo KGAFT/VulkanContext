@@ -1,24 +1,25 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
 
+import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanInstanceBuilder;
 import org.lwjgl.vulkan.VkPhysicalDeviceFeatures;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class VulkanDeviceBuilder {
+public class VulkanDeviceBuilder extends DestroyableObject {
     private List<Integer> requiredQueues = new ArrayList<>();
-    private List<Integer> requiredExtensions = new ArrayList<>();
+    private List<String> requiredExtensions = new ArrayList<>();
     private boolean needPresentationSupport = false;
     private VkPhysicalDeviceFeatures deviceFeatures;
-
-    protected VulkanDeviceBuilder(){
+    private long surface;
+    public VulkanDeviceBuilder(){
         deviceFeatures = VkPhysicalDeviceFeatures.calloc();
     }
     /**
      * @param extension specify any vulkan extension, like VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME or VK_KHR_SWAPCHAIN_EXTENSION_NAME
      */
-    public void addExtension(int extension){
+    public void addExtension(String extension){
         requiredExtensions.add(extension);
     }
 
@@ -44,7 +45,7 @@ public class VulkanDeviceBuilder {
         return requiredQueues;
     }
 
-    public List<Integer> getRequiredExtensions() {
+    public List<String> getRequiredExtensions() {
         return requiredExtensions;
     }
 
@@ -54,5 +55,23 @@ public class VulkanDeviceBuilder {
 
     public VkPhysicalDeviceFeatures getDeviceFeatures() {
         return deviceFeatures;
+    }
+
+
+    public long getSurface() {
+        return surface;
+    }
+    /**
+     * This method is required to call if you want presentation support
+     * @param surface your rendering surface
+     */
+    public void setSurface(long surface) {
+        this.surface = surface;
+    }
+
+    @Override
+    public void destroy() {
+        deviceFeatures.free();
+        super.destroy();
     }
 }

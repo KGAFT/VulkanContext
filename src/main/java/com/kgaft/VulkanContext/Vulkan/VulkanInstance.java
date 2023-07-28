@@ -1,65 +1,135 @@
 package com.kgaft.VulkanContext.Vulkan;
 
+import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
+import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
+import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
+import com.kgaft.VulkanContext.MemoryUtils.MemoryStackUtils;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-
-import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-import static org.lwjgl.vulkan.VK13.*;
-
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Objects;
 
+import static org.lwjgl.vulkan.VK13.*;
 
-public class VulkanInstance{
-    private VkInstance instance;
+public class VulkanInstance {
+    public static final String VK_LAYER_KHRONOS_validation = "VK_LAYER_KHRONOS_validation";
+    public static final String VK_LAYER_KHRONOS_synchronization2 = "VK_LAYER_KHRONOS_synchronization2";
+    public static final String VK_LAYER_KHRONOS_profiles = "VK_LAYER_KHRONOS_profiles";
+    public static final String VK_LAYER_LUNARG_api_dump = "VK_LAYER_LUNARG_api_dump";
+    public static final String VK_LAYER_LUNARG_gfxreconstruct = "VK_LAYER_LUNARG_gfxreconstruct";
+    public static final String VK_LAYER_LUNARG_monitor = "VK_LAYER_LUNARG_monitor";
+    public static final String VK_LAYER_LUNARG_screenshot = "VK_LAYER_LUNARG_screenshot";
+    private static VulkanInstanceBuilder builderInstance = null;
 
-    public boolean createInstance(String appName, String engineName, boolean enableLogging, List<String> requiredExtensions){
-        try(MemoryStack stack = MemoryStack.stackPush()){
-            VkApplicationInfo applicationInfo = VkApplicationInfo.calloc(stack);
-            applicationInfo.sType$Default();
-            applicationInfo.pApplicationName(stack.UTF8Safe(appName));
-            applicationInfo.applicationVersion(VK_MAKE_VERSION(1,0,0));
-            applicationInfo.pEngineName(stack.UTF8Safe(engineName));
-            applicationInfo.engineVersion(VK_MAKE_VERSION(1,0,0));
-            applicationInfo.apiVersion(VK_API_VERSION_1_3);
-
-            VkInstanceCreateInfo instanceCreateInfo = VkInstanceCreateInfo.calloc(stack);
-            instanceCreateInfo.sType$Default();
-            instanceCreateInfo.pApplicationInfo(applicationInfo);
-            instanceCreateInfo.ppEnabledExtensionNames(getRequiredExtensions(requiredExtensions, enableLogging, stack));
-
-            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-            if(enableLogging){
-                VulkanLogger.describeLogger(stack, debugCreateInfo, instanceCreateInfo);
-                instanceCreateInfo.pNext(debugCreateInfo);
-            }
-            PointerBuffer instanceResult = stack.callocPointer(1);
-            if(vkCreateInstance(instanceCreateInfo, null, instanceResult)!=VK_SUCCESS){
-                return false;
-            }
-            instance = new VkInstance(instanceResult.get(), instanceCreateInfo);
-            if(enableLogging){
-                return VulkanLogger.initLoggerInstance(instance, debugCreateInfo, stack);
-            }
-            return true;
+    public static VulkanInstanceBuilder getBuilderInstance() {
+        if (builderInstance == null) {
+            builderInstance = new VulkanInstanceBuilder();
         }
+        return builderInstance;
     }
-    private PointerBuffer getRequiredExtensions(List<String> baseExtensions, boolean enableLogging, MemoryStack stack){
-        PointerBuffer result = stack.callocPointer(baseExtensions.size()+(enableLogging?1:0));
-        baseExtensions.forEach(extension->{
-            result.put(Objects.requireNonNull(stack.UTF8Safe(extension)));
-        });
-        if(enableLogging){
-            result.put(Objects.requireNonNull(stack.UTF8Safe(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)));
+
+    public static VulkanInstance createInstance(int[] resOutput) throws BuilderNotPopulatedException, NotSupportedExtensionException, NotSupportedLayerException {
+        if (!builderInstance.appInfoEnabled) {
+            throw new BuilderNotPopulatedException("Error you have not specified the info about your application");
         }
-        result.rewind();
+
+        MemoryStack stack = MemoryStackUtils.acquireStack();
+        try {
+            if (!builderInstance.enabledExtensions.isEmpty()) {
+                checkExtensions(builderInstance.enabledExtensions, stack);
+                builderInstance.createInfo.ppEnabledExtensionNames(stack.callocPointer(builderInstance.enabledExtensions.size()));
+                builderInstance.enabledExtensions.forEach(element -> {
+                    builderInstance.createInfo.ppEnabledExtensionNames().put(stack.UTF8Safe(element));
+                });
+                builderInstance.createInfo.ppEnabledExtensionNames().rewind();
+            }
+            if (!builderInstance.enabledLayers.isEmpty()) {
+                checkLayers(builderInstance.enabledLayers, stack);
+                builderInstance.createInfo.ppEnabledLayerNames(stack.callocPointer(builderInstance.enabledLayers.size()));
+                builderInstance.enabledLayers.forEach(element -> {
+                    builderInstance.createInfo.ppEnabledLayerNames().put(stack.UTF8Safe(element));
+                });
+                builderInstance.createInfo.ppEnabledLayerNames().rewind();
+            }
+        } catch (NotSupportedExtensionException | NotSupportedLayerException e) {
+            MemoryStackUtils.freeStack(stack);
+            throw e;
+        }
+        VulkanLogger logger = new VulkanLogger();
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = null;
+        if (!builderInstance.enabledLayers.isEmpty()) {
+            debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+            logger.describeLogger(stack, debugCreateInfo);
+            builderInstance.createInfo.pNext(debugCreateInfo);
+        }
+        PointerBuffer instRes = stack.callocPointer(1);
+        int res = vkCreateInstance(builderInstance.createInfo, null, instRes);
+        if (resOutput != null) {
+            resOutput[0] = res;
+        }
+        if (res != VK_SUCCESS) {
+
+            MemoryStackUtils.freeStack(stack);
+            return null;
+        }
+        VkInstance instance = new VkInstance(instRes.get(), builderInstance.createInfo);
+        VulkanInstance result = new VulkanInstance(instance, null);
+        if (!builderInstance.enabledLayers.isEmpty()) {
+            logger.initLoggerInstance(instance, debugCreateInfo, stack);
+            result.logger = logger;
+        }
+
+        MemoryStackUtils.freeStack(stack);
         return result;
     }
 
-    public VkInstance getInstance() {
-        return instance;
+    private static void checkLayers(List<String> toCheck, MemoryStack stack) throws NotSupportedLayerException {
+        int[] layerCount = new int[1];
+        vkEnumerateInstanceLayerProperties(layerCount, null);
+        VkLayerProperties.Buffer layers = VkLayerProperties.calloc(layerCount[0], stack);
+        vkEnumerateInstanceLayerProperties(layerCount, layers);
+        for (String el : toCheck) {
+            boolean found = false;
+            for (VkLayerProperties cel : layers) {
+                if (cel.layerNameString().equals(el)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new NotSupportedLayerException(el);
+            }
+        }
+    }
+
+    private static void checkExtensions(List<String> toCheck, MemoryStack stack) throws NotSupportedExtensionException {
+        int[] extensionCount = new int[1];
+        vkEnumerateInstanceExtensionProperties((ByteBuffer) null, extensionCount, null);
+        VkExtensionProperties.Buffer extensions = VkExtensionProperties.calloc(extensionCount[0], stack);
+        vkEnumerateInstanceExtensionProperties((ByteBuffer) null, extensionCount, extensions);
+        for (String el : toCheck) {
+            boolean found = false;
+            for (VkExtensionProperties cel : extensions) {
+                if (cel.extensionNameString().equals(el)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw new NotSupportedExtensionException(el);
+            }
+        }
+    }
+
+    private VkInstance instance;
+    private VulkanLogger logger;
+
+    public VulkanInstance(VkInstance instance, VulkanLogger logger) {
+        this.instance = instance;
+        this.logger = logger;
     }
 }
+

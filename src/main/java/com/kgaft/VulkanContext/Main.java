@@ -1,57 +1,21 @@
 package com.kgaft.VulkanContext;
 
 
-
+import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
+import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
+import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
-import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
-import com.kgaft.VulkanContext.Vulkan.VulkanLogger.DefaultVulkanLoggerCallback;
-import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
-import com.kgaft.VulkanContext.Vulkan.VulkanRenderingPipeline.VulkanRenderPass;
-import com.kgaft.VulkanContext.Vulkan.VulkanSwapChain;
-import com.kgaft.VulkanContext.Vulkan.VulkanSync.VulkanSyncManager;
-import com.kgaft.Window.*;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.glfw.GLFWVulkan;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VK13;
 
+import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.VK10.VK_MAKE_VERSION;
+import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
 public class Main {
-    public static void main(String[] args) {
-        Window.prepareWindow(800, 600, "WindowNull", true);
-
-        VulkanLogger.getInstance().registerCallback(new DefaultVulkanLoggerCallback());
-        VulkanInstance instance = new VulkanInstance();
-
-        List<String> glfwExtensions = new ArrayList<>();
-        
-
-        PointerBuffer glfwExts = GLFWVulkan.glfwGetRequiredInstanceExtensions();
-        while(glfwExts.hasRemaining()){
-            glfwExtensions.add(glfwExts.getStringUTF8());
-        }
-
-        System.out.println(instance.createInstance("MyApp", "MyEngine", true, glfwExtensions));
-        
-        
-        Window window = Window.getWindow();
-        long windowSurface = window.getSurface(instance.getInstance());
-
-        VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).forEach((el, cel)->{
-            System.out.println(cel.deviceNameString());
-        });
-
-        VkPhysicalDevice deviceToCreate = (VkPhysicalDevice) VulkanDevice.enumerateSupportedDevices(instance.getInstance(), windowSurface).keySet().toArray()[0];
-        VulkanDevice device = new VulkanDevice(deviceToCreate, windowSurface, instance.getInstance(), true);
-        VulkanSwapChain swapChain = new VulkanSwapChain(device, 800, 600);
-        swapChain.recreate(2560, 1440);
-        VulkanSyncManager syncManager = new VulkanSyncManager(device, swapChain);
-        VulkanRenderPass renderPass = new VulkanRenderPass(device, swapChain.getSwapChainImageViews(), 2560, 1440, 1, VK10.VK_FORMAT_B8G8R8A8_UNORM, true);
-        System.out.println("True");
-        Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
+    public static void main(String[] args) throws NotSupportedExtensionException, NotSupportedLayerException, BuilderNotPopulatedException {
+        VulkanInstance.getBuilderInstance().addLayer(VulkanInstance.VK_LAYER_KHRONOS_validation).addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME).setApplicationInfo("HelloApp", "HElloENgine", VK13.VK_API_VERSION_1_3, VK_MAKE_VERSION(1,0,0), VK_MAKE_VERSION(1,0,0));
+        int[] instRes = new int[1];
+        VulkanInstance instance = VulkanInstance.createInstance(instRes);
+        System.out.print(instRes[0]==VK_SUCCESS);
     }
 }

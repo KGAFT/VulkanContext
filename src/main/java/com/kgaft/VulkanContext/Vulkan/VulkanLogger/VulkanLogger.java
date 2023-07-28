@@ -12,52 +12,30 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public class VulkanLogger implements VkDebugUtilsMessengerCallbackEXTI {
-    private static VulkanLogger instance = null;
+    public void describeLogger(MemoryStack stack, VkDebugUtilsMessengerCreateInfoEXT createInfo) {
 
-    public static void describeLogger(MemoryStack stack, VkDebugUtilsMessengerCreateInfoEXT createInfo, VkInstanceCreateInfo instanceCreateInfo) {
-        if (instanceCreateInfo != null) {
-            instanceCreateInfo.ppEnabledLayerNames(stack.callocPointer(1));
-            Objects.requireNonNull(instanceCreateInfo.ppEnabledLayerNames())
-                    .put(Objects.requireNonNull(stack.UTF8Safe("VK_LAYER_KHRONOS_validation")));
-            instanceCreateInfo.ppEnabledLayerNames().rewind();
-        }
         createInfo.sType$Default();
         createInfo.messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT);
         createInfo.messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
                 VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
-        if (instance == null) {
-            instance = new VulkanLogger();
-        }
-        createInfo.pfnUserCallback(instance);
+        createInfo.pfnUserCallback(this);
     }
 
-    public static boolean initLoggerInstance(VkInstance vkInstance, VkDebugUtilsMessengerCreateInfoEXT createInfoEXT, MemoryStack stack) {
-        if (instance == null) {
-            instance = new VulkanLogger();
-        }
+    public void initLoggerInstance(VkInstance vkInstance, VkDebugUtilsMessengerCreateInfoEXT createInfoEXT, MemoryStack stack) {
         LongBuffer handleResult = stack.mallocLong(1);
-        if (instance.createDebugUtilsMessenger(vkInstance, createInfoEXT, handleResult)) {
-            instance.vkInstance = vkInstance;
-            instance.handle = handleResult.get();
-            return true;
+        if (createDebugUtilsMessenger(vkInstance, createInfoEXT, handleResult)) {
+            this.vkInstance = vkInstance;
+            this.handle = handleResult.get();
         }
-        return false;
-    }
-
-    public static VulkanLogger getInstance() {
-        if(instance==null){
-            instance = new VulkanLogger();
-        }
-        return instance;
     }
 
     private long handle;
     private VkInstance vkInstance;
     private ArrayList<IVulkanLoggerCallback> callbacks = new ArrayList<>();
     
-    private VulkanLogger(){
+    public VulkanLogger(){
 
     }
 

@@ -1,5 +1,5 @@
 
-package com.kgaft.VulkanContext;
+package com.kgaft.VulkanContext.MemoryUtils;
 
 public abstract class DestroyableObject {
     protected boolean destroyed = false;

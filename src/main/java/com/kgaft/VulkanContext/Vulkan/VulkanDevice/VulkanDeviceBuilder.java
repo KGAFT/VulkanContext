@@ -1,7 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanDevice;
 
 import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
-import com.kgaft.VulkanContext.Vulkan.VulkanInstanceBuilder;
 import org.lwjgl.vulkan.VkPhysicalDeviceFeatures;
 
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public class VulkanDeviceBuilder extends DestroyableObject {
     /**
      * @param queue specify any vulkan queue, like VK_QUEUE_GRAPHICS_BIT
      */
-    public void adRequiredQueue(int queue){
+    public void addRequiredQueue(int queue){
         requiredQueues.add(queue);
     }
 
@@ -67,6 +66,14 @@ public class VulkanDeviceBuilder extends DestroyableObject {
      */
     public void setSurface(long surface) {
         this.surface = surface;
+    }
+
+    protected void clear(){
+        deviceFeatures.clear();
+        requiredQueues.clear();
+        requiredExtensions.clear();
+        needPresentationSupport = false;
+        surface = 0;
     }
 
     @Override

@@ -45,6 +45,9 @@ public class DeviceSuitability {
         if(builder.isNeedPresentationSupport()){
             gatherRequiredPresentationInfo(device, stack, builder.getSurface(), results);
         }
+        VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.calloc();
+        vkGetPhysicalDeviceProperties(device, properties);
+        results.setProperties(properties);
         return true;
     }
 

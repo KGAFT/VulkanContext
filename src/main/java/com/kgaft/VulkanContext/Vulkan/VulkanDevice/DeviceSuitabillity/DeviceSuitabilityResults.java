@@ -1,19 +1,18 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitabillity;
 
 import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
+import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class DeviceSuitabilityResults extends DestroyableObject {
     private HashMap<Integer, Integer> requiredQueues = new HashMap<>();
     private VkSurfaceFormatKHR.Buffer surfaceFormats = null;
     private int[] presentModes;
     private VkSurfaceCapabilitiesKHR capabilitiesKHR = null;
-
+    private VkPhysicalDeviceProperties properties = null;
     protected void setRequiredQueues(HashMap<Integer, Integer> requiredQueues) {
         this.requiredQueues = requiredQueues;
     }
@@ -46,6 +45,14 @@ public class DeviceSuitabilityResults extends DestroyableObject {
         return capabilitiesKHR;
     }
 
+    public VkPhysicalDeviceProperties getProperties() {
+        return properties;
+    }
+
+    protected void setProperties(VkPhysicalDeviceProperties properties) {
+        this.properties = properties;
+    }
+
     @Override
     public void destroy() {
         if(surfaceFormats!=null){
@@ -54,6 +61,7 @@ public class DeviceSuitabilityResults extends DestroyableObject {
         if(capabilitiesKHR!=null){
             capabilitiesKHR.free();
         }
+        properties.free();
         super.destroy();
     }
 }

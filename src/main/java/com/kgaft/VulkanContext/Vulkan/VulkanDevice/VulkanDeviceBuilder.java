@@ -12,25 +12,28 @@ public class VulkanDeviceBuilder extends DestroyableObject {
     private boolean needPresentationSupport = false;
     private VkPhysicalDeviceFeatures deviceFeatures;
     private long surface;
-    public VulkanDeviceBuilder(){
+    protected VulkanDeviceBuilder(){
         deviceFeatures = VkPhysicalDeviceFeatures.calloc();
     }
     /**
      * @param extension specify any vulkan extension, like VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME or VK_KHR_SWAPCHAIN_EXTENSION_NAME
      */
-    public void addExtension(String extension){
+    public VulkanDeviceBuilder addExtension(String extension){
         requiredExtensions.add(extension);
+        return this;
     }
 
     /**
      * @param queue specify any vulkan queue, like VK_QUEUE_GRAPHICS_BIT
      */
-    public void addRequiredQueue(int queue){
+    public VulkanDeviceBuilder addRequiredQueue(int queue){
         requiredQueues.add(queue);
+        return this;
     }
 
-    public void enablePresentationSupport(){
+    public VulkanDeviceBuilder enablePresentationSupport(){
         this.needPresentationSupport = true;
+        return this;
     }
 
     /**
@@ -64,8 +67,9 @@ public class VulkanDeviceBuilder extends DestroyableObject {
      * This method is required to call if you want presentation support
      * @param surface your rendering surface
      */
-    public void setSurface(long surface) {
+    public VulkanDeviceBuilder setSurface(long surface) {
         this.surface = surface;
+        return this;
     }
 
     protected void clear(){

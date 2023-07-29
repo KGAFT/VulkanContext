@@ -82,6 +82,7 @@ public class VulkanInstance extends DestroyableObject {
             logger.initLoggerInstance(instance, debugCreateInfo, stack);
             result.logger = logger;
         }
+        result.setEnabledLayers(builderInstance.enabledLayers);
 
         MemoryStackUtils.freeStack(stack);
         return result;
@@ -127,10 +128,22 @@ public class VulkanInstance extends DestroyableObject {
 
     private VkInstance instance;
     private VulkanLogger logger;
+    private List<String> enabledLayers;
 
     public VulkanInstance(VkInstance instance, VulkanLogger logger) {
         this.instance = instance;
         this.logger = logger;
+    }
+
+    
+
+    protected void setEnabledLayers(List<String> enabledLayers) {
+      this.enabledLayers = enabledLayers;
+    }
+
+
+    public List<String> getEnabledLayers() {
+      return enabledLayers;
     }
 
     public VkInstance getInstance() {

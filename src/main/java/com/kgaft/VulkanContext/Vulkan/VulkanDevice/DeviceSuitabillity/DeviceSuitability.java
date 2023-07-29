@@ -48,6 +48,9 @@ public class DeviceSuitability {
         VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.calloc();
         vkGetPhysicalDeviceProperties(device, properties);
         results.setProperties(properties);
+        results.setBaseDevice(device);
+        results.setRequiredExtensions(builder.getRequiredExtensions());
+        results.setEnaledFeatures(builder.getDeviceFeatures());
         return true;
     }
 

@@ -49,6 +49,7 @@ public class MemoryStackUtils {
                 }
             }
             removed.forEach(el->{
+                
                 allocatedMemoryStacks.remove(el);
             });
         }

@@ -10,7 +10,6 @@ import static org.lwjgl.vulkan.VK13.*;
 import java.io.PrintStream;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
-import java.util.Objects;
 
 public class VulkanLogger extends DestroyableObject implements VkDebugUtilsMessengerCallbackEXTI {
     public void describeLogger(MemoryStack stack, VkDebugUtilsMessengerCreateInfoEXT createInfo) {
@@ -48,6 +47,7 @@ public class VulkanLogger extends DestroyableObject implements VkDebugUtilsMesse
 
             PrintStream outputStream = messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ? System.err : System.out;
             outputStream.println("Vulkan: " + callbackData.pMessageString());
+           
         } else {
             StringBuilder textSeverity = new StringBuilder();
             StringBuilder textType = new StringBuilder();

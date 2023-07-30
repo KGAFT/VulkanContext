@@ -7,11 +7,12 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import static com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanQueue.PRESENT_QUEUE;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DeviceSuitability {
-    public static final int PRESENT_QUEUE = -1233841221;
+
 
     public static boolean isDeviceSuitable(MemoryStack stack, VkPhysicalDevice device, VulkanDeviceBuilder builder, DeviceSuitabilityResults results) {
         if(!checkDeviceExtensions(stack, device, builder.getRequiredExtensions())){

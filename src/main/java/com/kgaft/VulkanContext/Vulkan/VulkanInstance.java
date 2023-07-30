@@ -4,7 +4,6 @@ import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
 import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
-import com.kgaft.VulkanContext.MemoryUtils.MemoryStackUtils;
 import com.kgaft.VulkanContext.Vulkan.VulkanLogger.VulkanLogger;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -32,60 +31,61 @@ public class VulkanInstance extends DestroyableObject {
         return builderInstance;
     }
 
-    public static VulkanInstance createInstance(int[] resOutput) throws BuilderNotPopulatedException, NotSupportedExtensionException, NotSupportedLayerException {
+    public static VulkanInstance createInstance(int[] resOutput)
+            throws BuilderNotPopulatedException, NotSupportedExtensionException, NotSupportedLayerException {
         if (!builderInstance.appInfoEnabled) {
             throw new BuilderNotPopulatedException("Error you have not specified the info about your application");
         }
-
-        MemoryStack stack = MemoryStackUtils.acquireStack();
-        try {
-            if (!builderInstance.enabledExtensions.isEmpty()) {
-                checkExtensions(builderInstance.enabledExtensions, stack);
-                builderInstance.createInfo.ppEnabledExtensionNames(stack.callocPointer(builderInstance.enabledExtensions.size()));
-                builderInstance.enabledExtensions.forEach(element -> {
-                    builderInstance.createInfo.ppEnabledExtensionNames().put(stack.UTF8Safe(element));
-                });
-                builderInstance.createInfo.ppEnabledExtensionNames().rewind();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            try {
+                if (!builderInstance.enabledExtensions.isEmpty()) {
+                    checkExtensions(builderInstance.enabledExtensions, stack);
+                    builderInstance.createInfo
+                            .ppEnabledExtensionNames(stack.callocPointer(builderInstance.enabledExtensions.size()));
+                    builderInstance.enabledExtensions.forEach(element -> {
+                        builderInstance.createInfo.ppEnabledExtensionNames().put(stack.UTF8Safe(element));
+                    });
+                    builderInstance.createInfo.ppEnabledExtensionNames().rewind();
+                }
+                if (!builderInstance.enabledLayers.isEmpty()) {
+                    checkLayers(builderInstance.enabledLayers, stack);
+                    builderInstance.createInfo
+                            .ppEnabledLayerNames(stack.callocPointer(builderInstance.enabledLayers.size()));
+                    builderInstance.enabledLayers.forEach(element -> {
+                        builderInstance.createInfo.ppEnabledLayerNames().put(stack.UTF8Safe(element));
+                    });
+                    builderInstance.createInfo.ppEnabledLayerNames().rewind();
+                }
+            } catch (NotSupportedExtensionException | NotSupportedLayerException e) {
+                
+                throw e;
             }
+            VulkanLogger logger = new VulkanLogger();
+            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = null;
             if (!builderInstance.enabledLayers.isEmpty()) {
-                checkLayers(builderInstance.enabledLayers, stack);
-                builderInstance.createInfo.ppEnabledLayerNames(stack.callocPointer(builderInstance.enabledLayers.size()));
-                builderInstance.enabledLayers.forEach(element -> {
-                    builderInstance.createInfo.ppEnabledLayerNames().put(stack.UTF8Safe(element));
-                });
-                builderInstance.createInfo.ppEnabledLayerNames().rewind();
+                debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+                logger.describeLogger(stack, debugCreateInfo);
+                builderInstance.createInfo.pNext(debugCreateInfo);
             }
-        } catch (NotSupportedExtensionException | NotSupportedLayerException e) {
-            MemoryStackUtils.freeStack(stack);
-            throw e;
-        }
-        VulkanLogger logger = new VulkanLogger();
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = null;
-        if (!builderInstance.enabledLayers.isEmpty()) {
-            debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-            logger.describeLogger(stack, debugCreateInfo);
-            builderInstance.createInfo.pNext(debugCreateInfo);
-        }
-        PointerBuffer instRes = stack.callocPointer(1);
-        int res = vkCreateInstance(builderInstance.createInfo, null, instRes);
-        if (resOutput != null) {
-            resOutput[0] = res;
-        }
-        if (res != VK_SUCCESS) {
+            PointerBuffer instRes = stack.callocPointer(1);
+            int res = vkCreateInstance(builderInstance.createInfo, null, instRes);
+            if (resOutput != null) {
+                resOutput[0] = res;
+            }
+            if (res != VK_SUCCESS) {
+                return null;
+            }
+            VkInstance instance = new VkInstance(instRes.get(), builderInstance.createInfo);
+            VulkanInstance result = new VulkanInstance(instance, null);
+            if (!builderInstance.enabledLayers.isEmpty()) {
+                logger.initLoggerInstance(instance, debugCreateInfo, stack);
+                result.logger = logger;
+            }
+            result.setEnabledLayers(builderInstance.enabledLayers);
 
-            MemoryStackUtils.freeStack(stack);
-            return null;
+            return result;
         }
-        VkInstance instance = new VkInstance(instRes.get(), builderInstance.createInfo);
-        VulkanInstance result = new VulkanInstance(instance, null);
-        if (!builderInstance.enabledLayers.isEmpty()) {
-            logger.initLoggerInstance(instance, debugCreateInfo, stack);
-            result.logger = logger;
-        }
-        result.setEnabledLayers(builderInstance.enabledLayers);
 
-        MemoryStackUtils.freeStack(stack);
-        return result;
     }
 
     private static void checkLayers(List<String> toCheck, MemoryStack stack) throws NotSupportedLayerException {
@@ -135,15 +135,12 @@ public class VulkanInstance extends DestroyableObject {
         this.logger = logger;
     }
 
-    
-
     protected void setEnabledLayers(List<String> enabledLayers) {
-      this.enabledLayers = enabledLayers;
+        this.enabledLayers = enabledLayers;
     }
 
-
     public List<String> getEnabledLayers() {
-      return enabledLayers;
+        return enabledLayers;
     }
 
     public VkInstance getInstance() {
@@ -161,4 +158,3 @@ public class VulkanInstance extends DestroyableObject {
         vkDestroyInstance(instance, null);
     }
 }
-

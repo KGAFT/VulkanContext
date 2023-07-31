@@ -2,15 +2,7 @@ package com.kgaft.VulkanContext.Vulkan.VulkanBuffer;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkBufferCopy;
-import org.lwjgl.vulkan.VkBufferCreateInfo;
-import org.lwjgl.vulkan.VkBufferImageCopy;
-import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkExtent3D;
-import org.lwjgl.vulkan.VkMemoryAllocateInfo;
-import org.lwjgl.vulkan.VkMemoryRequirements;
-import org.lwjgl.vulkan.VkOffset3D;
-import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
+import org.lwjgl.vulkan.*;
 
 import com.kgaft.VulkanContext.Exceptions.BufferException;
 import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
@@ -19,20 +11,6 @@ import com.kgaft.VulkanContext.MemoryUtils.MemoryUtils;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanQueue;
 
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_ASPECT_COLOR_BIT;
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-import static org.lwjgl.vulkan.VK10.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
-import static org.lwjgl.vulkan.VK10.vkAllocateMemory;
-import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
-import static org.lwjgl.vulkan.VK10.vkCmdCopyBufferToImage;
-import static org.lwjgl.vulkan.VK10.vkCreateBuffer;
-import static org.lwjgl.vulkan.VK10.vkDestroyBuffer;
-import static org.lwjgl.vulkan.VK10.vkFreeMemory;
-import static org.lwjgl.vulkan.VK10.vkGetBufferMemoryRequirements;
-import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceMemoryProperties;
-import static org.lwjgl.vulkan.VK10.vkMapMemory;
-import static org.lwjgl.vulkan.VK10.vkUnmapMemory;
 import static org.lwjgl.vulkan.VK13.*;
 
 import java.nio.ByteBuffer;
@@ -184,6 +162,40 @@ public class VulkanBuffer extends DestroyableObject {
 
     vkCmdCopyBufferToImage(cmd, buffer, image, imageLayout, region);
   }
+
+
+  //1
+    public void copyBufferFromImage(VulkanQueue queue, long image, int width, int height,
+      int layerCount, int imageLayout) {
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      copyBufferToImage(stack, queue, image, width, height, layerCount, imageLayout);
+    }
+  }
+
+  public void copyBufferFromImage(MemoryStack stack, VulkanQueue queue, long image, int width, int height,
+      int layerCount, int imageLayout) {
+    VkCommandBuffer cmd = queue.beginSingleTimeCommands(stack);
+    copyBufferToImage(cmd, stack, image, width, height, layerCount, imageLayout);
+    queue.endSingleTimeCommands(cmd, stack);
+  }
+
+  public void copyBufferFromImage(VkCommandBuffer cmd, MemoryStack stack, long image, int width, int height,
+      int layerCount, int imageLayout) {
+    VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+    region.bufferOffset(0);
+    region.bufferRowLength(0);
+    region.bufferImageHeight(0);
+    region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+    region.imageSubresource().mipLevel(0);
+    region.imageSubresource().baseArrayLayer(0);
+    region.imageSubresource().layerCount(layerCount);
+    region.imageOffset(VkOffset3D.calloc(stack).x(0).y(0).z(0));
+    region.imageExtent(VkExtent3D.calloc(stack).width(width).height(height).depth(1));
+
+    vkCmdCopyImageToBuffer(cmd, image, imageLayout, buffer, region);
+  }
+
+  //2
 
   private void createBuffer(VulkanBufferBuilder bufferBuilder) {
     try (MemoryStack stack = MemoryStack.stackPush()) {

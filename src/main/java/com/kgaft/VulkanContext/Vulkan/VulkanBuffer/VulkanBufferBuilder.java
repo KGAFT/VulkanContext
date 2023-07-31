@@ -1,7 +1,5 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanBuffer;
 
-import org.lwjgl.vulkan.VkBufferCreateInfo;
-
 import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
 
 public class VulkanBufferBuilder {

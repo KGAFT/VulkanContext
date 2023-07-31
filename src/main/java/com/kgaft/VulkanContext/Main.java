@@ -1,6 +1,7 @@
 package com.kgaft.VulkanContext;
 
 
+import com.kgaft.VulkanContext.Exceptions.BufferException;
 import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
@@ -19,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 
 
 public class Main {
-    public static void main(String[] args) throws NotSupportedExtensionException, NotSupportedLayerException, BuilderNotPopulatedException, InterruptedException {
+    public static void main(String[] args) throws NotSupportedExtensionException, NotSupportedLayerException, BuilderNotPopulatedException, InterruptedException, BufferException {
         VulkanInstance.getBuilderInstance().addLayer(VulkanInstance.VK_LAYER_KHRONOS_validation)
                 .addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
                 .setApplicationInfo("HelloApp", "HElloENgine", VK13.VK_API_VERSION_1_3, VK_MAKE_VERSION(1,0,0), VK_MAKE_VERSION(1,0,0));

@@ -80,10 +80,6 @@ public class VulkanDevice {
         return null;
     }
 
-    
-
-    
-
     public VkDevice getDevice() {
       return device;
     }

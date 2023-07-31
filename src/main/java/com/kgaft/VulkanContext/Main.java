@@ -6,25 +6,45 @@ import com.kgaft.VulkanContext.Exceptions.NotSupportedExtensionException;
 import com.kgaft.VulkanContext.Exceptions.NotSupportedLayerException;
 import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
+import com.kgaft.VulkanContext.Vulkan.VulkanBuffer.VulkanBuffer;
+import com.kgaft.VulkanContext.Vulkan.VulkanBuffer.VulkanBufferBuilder;
+
 import org.lwjgl.vulkan.VK13;
 
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
 
 public class Main {
     public static void main(String[] args) throws NotSupportedExtensionException, NotSupportedLayerException, BuilderNotPopulatedException, InterruptedException {
-        VulkanInstance.getBuilderInstance().addLayer(VulkanInstance.VK_LAYER_KHRONOS_validation).addLayer(VulkanInstance.VK_LAYER_KHRONOS_profiles)
+        VulkanInstance.getBuilderInstance().addLayer(VulkanInstance.VK_LAYER_KHRONOS_validation)
                 .addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
                 .setApplicationInfo("HelloApp", "HElloENgine", VK13.VK_API_VERSION_1_3, VK_MAKE_VERSION(1,0,0), VK_MAKE_VERSION(1,0,0));
         int[] instRes = new int[1];
         VulkanInstance instance = VulkanInstance.createInstance(instRes);
         VulkanDevice.getDeviceBuilderInstance().addRequiredQueue(VK_QUEUE_GRAPHICS_BIT).addRequiredQueue(VK_QUEUE_COMPUTE_BIT);
-        VulkanDevice.enumerateSupportedDevices(instance).forEach((compatibilities)->{
-            System.out.println(compatibilities.getProperties().deviceNameString());
-            VulkanDevice.buildDevice(instance, compatibilities);
-        });
-        System.out.println("Successfully");
-
+        VulkanDevice device = VulkanDevice.buildDevice(instance, VulkanDevice.enumerateSupportedDevices(instance).get(0));
+        VulkanBufferBuilder bufferBuilder = new VulkanBufferBuilder();
+        bufferBuilder.setCreateMapped(false);
+        bufferBuilder.setMapFlags(0);
+        bufferBuilder.setRequiredProperties(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        bufferBuilder.setRequiredSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        bufferBuilder.setRequiredUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+        bufferBuilder.setRequiredSize("PTNH".getBytes(StandardCharsets.UTF_8).length);
+        VulkanBuffer buffer = new VulkanBuffer(device, bufferBuilder);
+        ByteBuffer data = ByteBuffer.allocate("PTNH".getBytes(StandardCharsets.UTF_8).length);
+        data.put("PRVN".getBytes(StandardCharsets.UTF_8));
+        data.rewind();
+        buffer.writeData(data, 0, 0);
+        data.clear();
+        data.rewind();
+        buffer.getData(data, 0l, (long)"PTNH".getBytes(StandardCharsets.UTF_8).length, 0);
+        data.rewind();
+        byte[] out = new byte["PTNH".getBytes(StandardCharsets.UTF_8).length];
+        data.get(out);
+        System.out.println(new String(out));
     }
 }

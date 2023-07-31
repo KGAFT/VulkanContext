@@ -82,6 +82,12 @@ public class VulkanDevice {
 
     
 
+    
+
+    public VkDevice getDevice() {
+      return device;
+    }
+
     private void createLogicalDevice(DeviceSuitabilityResults suitabilityResults) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 

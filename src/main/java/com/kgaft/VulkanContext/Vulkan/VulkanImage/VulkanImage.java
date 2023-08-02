@@ -8,27 +8,16 @@ import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanQueue;
 
 import org.lwjgl.system.MemoryStack;
 
-import static org.lwjgl.vulkan.VK10.VK_ACCESS_SHADER_WRITE_BIT;
-import static org.lwjgl.vulkan.VK10.VK_ACCESS_TRANSFER_WRITE_BIT;
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_ASPECT_COLOR_BIT;
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_TYPE_2D;
-import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-import static org.lwjgl.vulkan.VK10.VK_QUEUE_FAMILY_IGNORED;
-import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
-import static org.lwjgl.vulkan.VK10.vkAllocateMemory;
-import static org.lwjgl.vulkan.VK10.vkBindImageMemory;
-import static org.lwjgl.vulkan.VK10.vkCmdPipelineBarrier;
-import static org.lwjgl.vulkan.VK10.vkCreateImage;
-import static org.lwjgl.vulkan.VK10.vkGetImageMemoryRequirements;
 import static org.lwjgl.vulkan.VK13.*;
 
 public class VulkanImage {
     private VulkanDevice device;
     private long image;
     private long imageMemory;
+    private long imageView;
     private int imageLayout;
     private int imageTiling;
+    private int imageFormat;
     private int sharingMode;
     private int samples;
     private int accessMask = 0;
@@ -37,72 +26,73 @@ public class VulkanImage {
     public VulkanImage(VulkanDevice device, VulkanImageBuilder builder) throws BuilderNotPopulatedException {
         this.device = device;
         builder.checkBuilder();
-        
+        if(builder.getArraySize()!=1){
+            throw new BuilderNotPopulatedException("Error you cannot specify array size for simple image, use image array instead");
+        }
         this.imageLayout = builder.getInitialLayout();
         this.imageTiling = builder.getTiling();
         this.sharingMode = builder.getSharingMode();
         this.samples = builder.getSamples();
-
-        try(MemoryStack stack = MemoryStack.stackPush()){
+        this.imageFormat = builder.getFormat();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             this.image = createImage(stack, builder);
             this.imageMemory = createImageMemory(stack, device, builder.getImageMemoryProperties(), image);
+            this.imageView = createImageView(stack, this.image, this.imageFormat);
         }
-        
+
     }
 
     public VulkanDevice getDevice() {
         return device;
     }
 
-
-
     public long getImage() {
         return image;
     }
 
+    public long getImageView() {
+        return imageView;
+    }
 
+    public int getImageFormat() {
+        return imageFormat;
+    }
 
     public long getImageMemory() {
         return imageMemory;
     }
 
-
-
     public int getImageLayout() {
         return imageLayout;
     }
-
-
 
     public int getImageTiling() {
         return imageTiling;
     }
 
-
-
     public int getSharingMode() {
         return sharingMode;
     }
-
-
 
     public int getSamples() {
         return samples;
     }
 
-    public void changeLayout(int targetLayout, int targetAccessMask, int targetShaderStage, VulkanQueue queue){
-        try(MemoryStack stack = MemoryStack.stackPush()){
+    public void changeLayout(int targetLayout, int targetAccessMask, int targetShaderStage, VulkanQueue queue) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             changeLayout(stack, targetLayout, targetAccessMask, targetShaderStage, queue);
         }
     }
 
-    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage, VulkanQueue queue){
+    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage,
+            VulkanQueue queue) {
         VkCommandBuffer cmd = queue.beginSingleTimeCommands(stack);
         changeLayout(stack, targetLayout, targetAccessMask, targetShaderStage, cmd);
         queue.endSingleTimeCommands(cmd, stack);
     }
 
-    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage, VkCommandBuffer cmd){
+    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage,
+            VkCommandBuffer cmd) {
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
         barrier.oldLayout(this.imageLayout);
@@ -119,7 +109,6 @@ public class VulkanImage {
         barrier.srcAccessMask(this.accessMask);
         barrier.dstAccessMask(targetAccessMask);
 
-
         vkCmdPipelineBarrier(cmd,
                 this.shaderStage, targetShaderStage,
                 0,
@@ -128,16 +117,13 @@ public class VulkanImage {
                 barrier);
         this.accessMask = targetAccessMask;
         this.imageLayout = targetLayout;
-        this.shaderStage = targetShaderStage;        
+        this.shaderStage = targetShaderStage;
 
     }
-
 
     public int getAccessMask() {
         return accessMask;
     }
-
-
 
     public int getShaderStage() {
         return shaderStage;
@@ -181,5 +167,26 @@ public class VulkanImage {
 
         vkBindImageMemory(device.getDevice(), image, res[0], 0);
         return res[0];
+    }
+
+    public long createImageView(MemoryStack stack, long image, int format) {
+
+        VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
+        viewInfo.sType$Default();
+        viewInfo.image(image);
+        viewInfo.viewType(VK_IMAGE_VIEW_TYPE_2D);
+        viewInfo.format(format);
+        viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        viewInfo.subresourceRange().baseMipLevel(0);
+        viewInfo.subresourceRange().levelCount(1);
+        viewInfo.subresourceRange().baseArrayLayer(0);
+        viewInfo.subresourceRange().layerCount(1);
+
+        long[] result = new long[1];
+        if (vkCreateImageView(device.getDevice(), viewInfo, null, result) != VK_SUCCESS) {
+            throw new RuntimeException("Failed to create image view");
+        }
+        return result[0];
+
     }
 }

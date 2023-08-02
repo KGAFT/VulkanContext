@@ -14,7 +14,7 @@ public class VulkanImageBuilder{
     private int samples = NOT_POPULATED;
     private int sharingMode = NOT_POPULATED;
     private int imageMemoryProperties = NOT_POPULATED;
-
+    private int arraySize = 1;
     public int getWidth() {
         return width;
     }
@@ -71,7 +71,14 @@ public class VulkanImageBuilder{
         this.imageMemoryProperties = imageMemoryProperties;
     }
     
+    
 
+    public int getArraySize() {
+        return arraySize;
+    }
+    public void setArraySize(int arraySize) {
+        this.arraySize = arraySize;
+    }
     protected void checkBuilder() throws BuilderNotPopulatedException{
         if(this.width == NOT_POPULATED || this.height==NOT_POPULATED){
             throw new BuilderNotPopulatedException("Error: you forgot to specify image extent");

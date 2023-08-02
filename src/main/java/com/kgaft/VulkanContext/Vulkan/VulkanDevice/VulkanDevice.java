@@ -9,6 +9,7 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkDeviceCreateInfo;
 import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
 import org.lwjgl.vulkan.VkQueue;
 
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
@@ -81,7 +82,19 @@ public class VulkanDevice {
     }
 
     public VkDevice getDevice() {
-      return device;
+        return device;
+    }
+
+    public int findMemoryType(int typeFilter, int properties, MemoryStack stack) {
+        VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
+        vkGetPhysicalDeviceMemoryProperties(baseDevice, memProperties);
+        for (int i = 0; i < memProperties.memoryTypeCount(); i++) {
+            if ((typeFilter & (int) (1 << i)) > 0
+                    && (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
+                return i;
+            }
+        }
+        throw new RuntimeException("Failed to find suitable memory type");
     }
 
     private void createLogicalDevice(DeviceSuitabilityResults suitabilityResults) {

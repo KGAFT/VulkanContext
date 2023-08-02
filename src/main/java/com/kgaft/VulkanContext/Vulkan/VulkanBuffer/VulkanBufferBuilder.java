@@ -3,11 +3,13 @@ package com.kgaft.VulkanContext.Vulkan.VulkanBuffer;
 import com.kgaft.VulkanContext.Exceptions.BuilderNotPopulatedException;
 
 public class VulkanBufferBuilder {
-  private int requiredSize = -1;
-  private int requiredUsage = -1;
+  private static final int NOT_POPULATED = -951904341;
+
+  private int requiredSize = NOT_POPULATED;
+  private int requiredUsage = NOT_POPULATED;
   private boolean createMapped = false;
-  private int requiredProperties = -1;
-  private int requiredSharingMode = -1;
+  private int requiredProperties = NOT_POPULATED;
+  private int requiredSharingMode = NOT_POPULATED;
   private int mapFlags = 0;
 
   public int getRequiredSize() {
@@ -69,16 +71,16 @@ public class VulkanBufferBuilder {
   }
 
   protected void isPopulated() throws BuilderNotPopulatedException {
-    if (requiredSize == -1) {
+    if (requiredSize == NOT_POPULATED) {
       throw new BuilderNotPopulatedException("Error you forgot to specify required size for VkBuffer");
     }
-    if (requiredUsage == -1) {
+    if (requiredUsage == NOT_POPULATED) {
       throw new BuilderNotPopulatedException("Error you forgot to specify required usage for VkBuffer");
     }
-    if (requiredProperties == -1) {
+    if (requiredProperties == NOT_POPULATED) {
       throw new BuilderNotPopulatedException("Error you forgot to specify required properties for VkBuffer");
     }
-    if (requiredSharingMode == -1) {
+    if (requiredSharingMode == NOT_POPULATED) {
       throw new BuilderNotPopulatedException("Error you forgot to specify required sharing mode for VkBuffer");
     }
   }

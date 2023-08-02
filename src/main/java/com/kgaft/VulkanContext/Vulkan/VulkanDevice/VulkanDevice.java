@@ -28,24 +28,25 @@ public class VulkanDevice {
      */
     public static List<DeviceSuitabilityResults> enumerateSupportedDevices(VulkanInstance instance) {
         List<DeviceSuitabilityResults> results = new ArrayList<>();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            int[] physicalDeviceCount = new int[1];
-            vkEnumeratePhysicalDevices(instance.getInstance(), physicalDeviceCount, null);
-            PointerBuffer pb = stack.callocPointer(physicalDeviceCount[0]);
-            vkEnumeratePhysicalDevices(instance.getInstance(), physicalDeviceCount, pb);
-
-            while (pb.hasRemaining()) {
-                VkPhysicalDevice device = new VkPhysicalDevice(pb.get(), instance.getInstance());
-                DeviceSuitabilityResults suitabilityResults = new DeviceSuitabilityResults();
-                if (DeviceSuitability.isDeviceSuitable(stack, device, deviceBuilderInstance, suitabilityResults)) {
-                    results.add(suitabilityResults);
-                }
+        int[] physicalDeviceCount = new int[1];
+        vkEnumeratePhysicalDevices(instance.getInstance(), physicalDeviceCount, null);
+        PointerBuffer pb = PointerBuffer.allocateDirect(physicalDeviceCount[0]);
+        vkEnumeratePhysicalDevices(instance.getInstance(), physicalDeviceCount, pb);
+        
+        while (pb.hasRemaining()) {
+            
+            MemoryStack stack = MemoryStack.stackPush();
+            VkPhysicalDevice device = new VkPhysicalDevice(pb.get(), instance.getInstance());
+            DeviceSuitabilityResults suitabilityResults = new DeviceSuitabilityResults();
+            if (DeviceSuitability.isDeviceSuitable(stack, device, deviceBuilderInstance, suitabilityResults)) {
+                results.add(suitabilityResults);
             }
+            MemoryStack.stackPop();
 
-            return results;
         }
-
+        pb.free();
+        return results;
     }
 
     public static VulkanDeviceBuilder getDeviceBuilderInstance() {

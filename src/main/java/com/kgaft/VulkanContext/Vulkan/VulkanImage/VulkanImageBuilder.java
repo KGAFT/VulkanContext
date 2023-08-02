@@ -15,6 +15,8 @@ public class VulkanImageBuilder{
     private int sharingMode = NOT_POPULATED;
     private int imageMemoryProperties = NOT_POPULATED;
     private int arraySize = 1;
+    private int requiredUsage = NOT_POPULATED;
+
     public int getWidth() {
         return width;
     }
@@ -70,9 +72,14 @@ public class VulkanImageBuilder{
     public void setImageMemoryProperties(int imageMemoryProperties) {
         this.imageMemoryProperties = imageMemoryProperties;
     }
-    
-    
 
+    
+    public int getRequiredUsage() {
+        return requiredUsage;
+    }
+    public void setRequiredUsage(int requiredUsage) {
+        this.requiredUsage = requiredUsage;
+    }
     public int getArraySize() {
         return arraySize;
     }
@@ -103,6 +110,9 @@ public class VulkanImageBuilder{
         }
         if(this.imageMemoryProperties==NOT_POPULATED){
             throw new BuilderNotPopulatedException("Error: you forgot to specify image memory properties");
+        }
+        if(this.requiredUsage==NOT_POPULATED){
+            throw new BuilderNotPopulatedException("Error: you forgot to specify required image usage");
         }
     }
     

@@ -133,49 +133,17 @@ public class VulkanBuffer extends DestroyableObject {
     vkCmdCopyBuffer(cmd, src.buffer, buffer, copyRegion);
   }
 
-  public void copyBufferToImage(VulkanQueue queue, long image, int width, int height,
+  public void copyBufferFromImage(VulkanQueue queue, long image, int width, int height,
       int layerCount, int imageLayout) {
     try (MemoryStack stack = MemoryStack.stackPush()) {
-      copyBufferToImage(stack, queue, image, width, height, layerCount, imageLayout);
-    }
-  }
-
-  public void copyBufferToImage(MemoryStack stack, VulkanQueue queue, long image, int width, int height,
-      int layerCount, int imageLayout) {
-    VkCommandBuffer cmd = queue.beginSingleTimeCommands(stack);
-    copyBufferToImage(cmd, stack, image, width, height, layerCount, imageLayout);
-    queue.endSingleTimeCommands(cmd, stack);
-  }
-
-  public void copyBufferToImage(VkCommandBuffer cmd, MemoryStack stack, long image, int width, int height,
-      int layerCount, int imageLayout) {
-    VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
-    region.bufferOffset(0);
-    region.bufferRowLength(0);
-    region.bufferImageHeight(0);
-    region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-    region.imageSubresource().mipLevel(0);
-    region.imageSubresource().baseArrayLayer(0);
-    region.imageSubresource().layerCount(layerCount);
-    region.imageOffset(VkOffset3D.calloc(stack).x(0).y(0).z(0));
-    region.imageExtent(VkExtent3D.calloc(stack).width(width).height(height).depth(1));
-
-    vkCmdCopyBufferToImage(cmd, buffer, image, imageLayout, region);
-  }
-
-
-  //1
-    public void copyBufferFromImage(VulkanQueue queue, long image, int width, int height,
-      int layerCount, int imageLayout) {
-    try (MemoryStack stack = MemoryStack.stackPush()) {
-      copyBufferToImage(stack, queue, image, width, height, layerCount, imageLayout);
+      copyBufferFromImage(stack, queue, image, width, height, layerCount, imageLayout);
     }
   }
 
   public void copyBufferFromImage(MemoryStack stack, VulkanQueue queue, long image, int width, int height,
       int layerCount, int imageLayout) {
     VkCommandBuffer cmd = queue.beginSingleTimeCommands(stack);
-    copyBufferToImage(cmd, stack, image, width, height, layerCount, imageLayout);
+    copyBufferFromImage(cmd, stack, image, width, height, layerCount, imageLayout);
     queue.endSingleTimeCommands(cmd, stack);
   }
 
@@ -195,7 +163,7 @@ public class VulkanBuffer extends DestroyableObject {
     vkCmdCopyImageToBuffer(cmd, image, imageLayout, buffer, region);
   }
 
-  //2
+  // 2
 
   private void createBuffer(VulkanBufferBuilder bufferBuilder) {
     try (MemoryStack stack = MemoryStack.stackPush()) {

@@ -61,16 +61,16 @@ public class Main {
         imageBuilder.setWidth(800);
         imageBuilder.setImageMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         imageBuilder.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-        imageBuilder.setMipLevels(1);
+        imageBuilder.setMipLevels(4);
         imageBuilder.setSamples(1);
         imageBuilder.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
         imageBuilder.setTiling(VK_IMAGE_TILING_OPTIMAL);
         imageBuilder.setRequiredUsage(VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         VulkanImage image = new VulkanImage(device, imageBuilder);
-        VulkanImageView cubeView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_CUBE, 0, 6);
-        VulkanImageView baseView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_2D, 2, 1);
-        VulkanImageView arrayView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, 3);
+        VulkanImageView cubeView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_CUBE, 0, 6, 1, 1);
+        VulkanImageView baseView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_2D, 2, 1, 2, 1);
+        VulkanImageView arrayView = image.acquireImageView(MemoryStack.stackPush(), VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, 3, 3, 1);
         /**@TODO Not working */
-        image.changeLayout(MemoryStack.stackPush(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_SHADER_STAGE_ALL, device.getQueueByType(VK_QUEUE_GRAPHICS_BIT));
+        //image.changeLayout(MemoryStack.stackPush(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_USAGE_SAMPLED_BIT, VK_SHADER_STAGE_ALL, device.getQueueByType(VK_QUEUE_GRAPHICS_BIT));
     }
 }

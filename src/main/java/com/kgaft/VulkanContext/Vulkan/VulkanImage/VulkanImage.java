@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanImage;
 
+import com.kgaft.VulkanContext.Vulkan.VulkanBuffer.VulkanBuffer;
 import org.joml.Vector4f;
 import org.lwjgl.vulkan.*;
 
@@ -41,6 +42,8 @@ public class VulkanImage {
     private int shaderStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     private int layerCount;
     private int mipLevels;
+    private int width;
+    private int height;
     private List<VulkanImageView> imageViews = new ArrayList<>();
 
     public VulkanImage(VulkanDevice device, VulkanImageBuilder builder) throws BuilderNotPopulatedException {
@@ -53,6 +56,8 @@ public class VulkanImage {
         this.imageFormat = builder.getFormat();
         this.layerCount = builder.getArraySize();
         this.mipLevels = builder.getMipLevels();
+        this.width = builder.getWidth();
+        this.height = builder.getHeight();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             this.image = createImage(stack, builder);
             this.imageMemory = createImageMemory(stack, device, builder.getImageMemoryProperties(), image);
@@ -145,15 +150,43 @@ public class VulkanImage {
 
     }
 
-    private void copyImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, int width, int height, long src, int srcLayout, int srcLayerIndex, long dst, int dstLayout, int dstLayerIndex, int layersAmount, int mipLevelIndex){
-        VkImageCopy imageCopy = VkImageCopy.calloc(stack);
-        imageCopy.srcSubresource().aspectMask(isDepth?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT);
-        imageCopy.srcSubresource().layerCount(layersAmount);
-        imageCopy.srcSubresource().baseArrayLayer(srcLayerIndex);
-        imageCopy.srcSubresource().mipLevel(mipLevelIndex);
-        imageCopy.dstSubresource().baseArrayLayer(dstLayerIndex);
-        imageCopy.dstSubresource().layerCount(layerCount);
-        imageCopy.dstSubresource().mipLevel(mipLevelIndex);
+    public void copyFromImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, VulkanImage src, ImageTarget srcTarget, ImageTarget dstTarget){
+        copyImage(stack, cmd, isDepth, this.width, this.height, src.image, src.imageLayout, srcTarget, image, imageLayout, dstTarget);
+    }
+
+    public void copyToImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, VulkanImage dst, ImageTarget dstTarget, ImageTarget srcTarget){
+        copyImage(stack, cmd, isDepth, this.width, this.height, image, imageLayout, srcTarget, dst.image, dst.imageLayout, dstTarget);
+    }
+    public void copyFromBuffer(VulkanBuffer buffer, VkCommandBuffer cmd, MemoryStack stack, ImageTarget target){
+        int lastLayout = this.imageLayout;
+        int lastShaderStage = this.shaderStage;
+        int lastAccessMask = this.accessMask;
+        changeLayout(stack, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, cmd);
+
+        VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
+        region.bufferOffset(0);
+        region.bufferRowLength(0);
+        region.bufferImageHeight(0);
+        region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        region.imageSubresource().mipLevel(target.getMipLevel());
+        region.imageSubresource().baseArrayLayer(target.getStartLayerIndex());
+        region.imageSubresource().layerCount(target.getLayersAmount());
+        region.imageOffset(VkOffset3D.calloc(stack).x(0).y(0).z(0));
+        region.imageExtent(VkExtent3D.calloc(stack).width(width).height(height).depth(1));
+
+        vkCmdCopyBufferToImage(cmd, buffer.getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+        changeLayout(stack, lastLayout, lastAccessMask, lastShaderStage, cmd);
+    }
+
+    private void copyImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, int width, int height, long src, int srcLayout, ImageTarget srcTarget, long dst, int dstLayout, ImageTarget dstTarget) {
+        VkImageCopy.Buffer imageCopy = VkImageCopy.calloc(1, stack);
+        imageCopy.srcSubresource().aspectMask(isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+        imageCopy.srcSubresource().layerCount(srcTarget.getLayersAmount());
+        imageCopy.srcSubresource().baseArrayLayer(srcTarget.getStartLayerIndex());
+        imageCopy.srcSubresource().mipLevel(srcTarget.getMipLevel());
+        imageCopy.dstSubresource().baseArrayLayer(dstTarget.getStartLayerIndex());
+        imageCopy.dstSubresource().layerCount(srcTarget.getLayersAmount());
+        imageCopy.dstSubresource().mipLevel(dstTarget.getMipLevel());
         imageCopy.extent().width(width);
         imageCopy.extent().height(height);
         imageCopy.extent().depth(1);
@@ -164,7 +197,7 @@ public class VulkanImage {
                 imageCopy);
     }
 
-    public void clearColorImage(VkCommandBuffer cmd, MemoryStack stack, Vector4f newColor, int arrayIndexStart, int layersAmount, int mipLeveIndex, int mipLevelCount){
+    public void clearColorImage(VkCommandBuffer cmd, MemoryStack stack, Vector4f newColor, ImageTarget target) {
         VkClearColorValue clearColorValue = VkClearColorValue.calloc(stack);
         clearColorValue.float32(0, newColor.x);
         clearColorValue.float32(1, newColor.y);
@@ -172,38 +205,46 @@ public class VulkanImage {
         clearColorValue.float32(3, newColor.w);
         VkImageSubresourceRange subresourceRange = VkImageSubresourceRange.calloc(stack);
         subresourceRange.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        subresourceRange.baseArrayLayer(arrayIndexStart);
-        subresourceRange.layerCount(layersAmount);
-        subresourceRange.baseMipLevel(mipLeveIndex);
-        subresourceRange.levelCount(mipLevelCount);
+        subresourceRange.baseArrayLayer(target.getStartLayerIndex());
+        subresourceRange.layerCount(target.getLayersAmount());
+        subresourceRange.baseMipLevel(target.getMipLevel());
+        subresourceRange.levelCount(target.getMipLevelCount());
         vkCmdClearColorImage(cmd, image, imageLayout, clearColorValue, subresourceRange);
     }
 
-    public VulkanImageView acquireImageView(MemoryStack stack, int type, int arrayIndex, int layerCount, int mipLevelIndex, int mipLevelCount) {
-        if (arrayIndex >= this.layerCount || arrayIndex < 0) {
-            throw new RuntimeException("Failed to acquired image with not existing index: " + arrayIndex);
+    public VulkanImageView acquireImageView(MemoryStack stack, int type, ImageTarget imageTarget) {
+        if (imageTarget.getStartLayerIndex() >= this.layerCount || imageTarget.getStartLayerIndex() < 0) {
+            throw new RuntimeException("Failed to acquired image with not existing index: " + imageTarget.getStartLayerIndex());
         }
         if (type == VK_IMAGE_VIEW_TYPE_2D) {
             for (VulkanImageView view : imageViews) {
-                if (view.getType() == VK_IMAGE_VIEW_TYPE_2D && view.getArrayLayerIndex() == arrayIndex) {
+                if (view.getType() == VK_IMAGE_VIEW_TYPE_2D && view.getArrayLayerIndex() == imageTarget.getStartLayerIndex()
+                        && view.getMipLevel() == imageTarget.getMipLevel()
+                        && view.getMipLevelAmount() == imageTarget.getMipLevelCount()) {
                     return view;
                 }
             }
-            long imageViewHandle = createImageView(stack, this.image, this.imageFormat, 1, arrayIndex,mipLevelIndex, mipLevelCount, type);
-            VulkanImageView imageView = new VulkanImageView(type, arrayIndex, 1, imageViewHandle);
+            long imageViewHandle = createImageView(stack, this.image, this.imageFormat, 1,
+                    imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
+            VulkanImageView imageView = new VulkanImageView(type, imageTarget.getStartLayerIndex(), 1, imageViewHandle);
             imageViews.add(imageView);
             return imageView;
         } else if (type == VK_IMAGE_VIEW_TYPE_2D_ARRAY || type == VK_IMAGE_VIEW_TYPE_CUBE) {
-            if (layerCount > this.layerCount || layerCount < 1 || arrayIndex >= this.layerCount || arrayIndex < 0) {
+            if (imageTarget.getLayersAmount() > this.layerCount || layerCount < 1 || imageTarget.getStartLayerIndex() >= this.layerCount
+                    || imageTarget.getStartLayerIndex() < 0) {
                 throw new RuntimeException("Failed to create multiple image view, because layerCount more than image layers");
             }
             for (VulkanImageView view : imageViews) {
-                if (view.getType() == type && view.getArrayLayerIndex() == arrayIndex && view.getLayerCount() == layerCount) {
+                if (view.getType() == type && view.getArrayLayerIndex() == imageTarget.getStartLayerIndex()
+                        && view.getLayerCount() == layerCount && view.getMipLevel() == imageTarget.getMipLevel()
+                        && view.getMipLevelAmount() == imageTarget.getMipLevelCount()) {
                     return view;
                 }
             }
-            long viewHandle = createImageView(stack, image, this.imageFormat, layerCount, arrayIndex, mipLevelIndex, mipLevelCount, type);
-            VulkanImageView view = new VulkanImageView(type, arrayIndex, layerCount, viewHandle);
+            long viewHandle = createImageView(stack, image, this.imageFormat, imageTarget.getLayersAmount(), imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
+            VulkanImageView view = new VulkanImageView(type, imageTarget.getStartLayerIndex(), layerCount, viewHandle);
+            view.setMipLevel(imageTarget.getMipLevel());
+            view.setMipLevelAmount(imageTarget.getMipLevelCount());
             this.imageViews.add(view);
             return view;
         } else {

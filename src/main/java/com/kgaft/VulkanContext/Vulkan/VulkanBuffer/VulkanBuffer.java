@@ -62,6 +62,10 @@ public class VulkanBuffer extends DestroyableObject {
     mapPoint.rewind();
   }
 
+  public long getBuffer() {
+    return buffer;
+  }
+
   public void getData(ByteBuffer output, long offset, long size, int mapFlags) throws BufferException {
     if ((propertiesFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0) {
       throw new BufferException("Error you cannot read and write data to not visible host buffer!");

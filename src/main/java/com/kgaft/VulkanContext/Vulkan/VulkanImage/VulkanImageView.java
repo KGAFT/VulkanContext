@@ -5,6 +5,9 @@ public class VulkanImageView {
     private int arrayLayerIndex;
     private long handle;
     private int layerCount;
+    private int mipLevel;
+    private int mipLevelAmount;
+
     protected VulkanImageView(int type, int arrayLayerIndex, int layerCount, long handle) {
         this.type = type;
         this.arrayLayerIndex = arrayLayerIndex;
@@ -24,7 +27,7 @@ public class VulkanImageView {
         this.handle = handle;
     }
 
-    
+
     public int getType() {
         return type;
     }
@@ -44,5 +47,20 @@ public class VulkanImageView {
     protected void setLayerCount(int layerCount) {
         this.layerCount = layerCount;
     }
-    
+
+    public int getMipLevel() {
+        return mipLevel;
+    }
+
+    protected void setMipLevel(int mipLevel) {
+        this.mipLevel = mipLevel;
+    }
+
+    public int getMipLevelAmount() {
+        return mipLevelAmount;
+    }
+
+    protected void setMipLevelAmount(int mipLevelAmount) {
+        this.mipLevelAmount = mipLevelAmount;
+    }
 }

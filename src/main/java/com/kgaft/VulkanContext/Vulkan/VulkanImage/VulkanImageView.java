@@ -1,18 +1,26 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanImage;
 
-public class VulkanImageView {
+import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
+import com.kgaft.VulkanContext.Vulkan.VulkanDevice.VulkanDevice;
+import org.lwjgl.vulkan.VK13;
+
+public class VulkanImageView extends DestroyableObject {
     private int type;
     private int arrayLayerIndex;
     private long handle;
     private int layerCount;
     private int mipLevel;
     private int mipLevelAmount;
+    private VulkanDevice device;
 
-    protected VulkanImageView(int type, int arrayLayerIndex, int layerCount, long handle) {
+    private VulkanImage image;
+    protected VulkanImageView(VulkanDevice device, VulkanImage image, int type, int arrayLayerIndex, int layerCount, long handle) {
+        this.device = device;
         this.type = type;
         this.arrayLayerIndex = arrayLayerIndex;
         this.handle = handle;
         this.layerCount = layerCount;
+        this.image = image;
     }
 
     protected void setType(int type) {
@@ -60,7 +68,19 @@ public class VulkanImageView {
         return mipLevelAmount;
     }
 
+    public VulkanImage getImage() {
+        return image;
+    }
+
+
+
     protected void setMipLevelAmount(int mipLevelAmount) {
         this.mipLevelAmount = mipLevelAmount;
+    }
+
+    @Override
+    public void destroy() {
+        VK13.vkDestroyImageView(device.getDevice(), this.handle, null);
+        super.destroy();
     }
 }

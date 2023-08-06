@@ -1,5 +1,6 @@
 package com.kgaft.VulkanContext.Vulkan.VulkanImage;
 
+import com.kgaft.VulkanContext.MemoryUtils.DestroyableObject;
 import com.kgaft.VulkanContext.Vulkan.VulkanBuffer.VulkanBuffer;
 import org.joml.Vector4f;
 import org.lwjgl.vulkan.*;
@@ -29,7 +30,7 @@ import java.util.List;
 
 import javax.management.RuntimeErrorException;
 
-public class VulkanImage {
+public class VulkanImage extends DestroyableObject {
     private VulkanDevice device;
     private long image;
     private long imageMemory;
@@ -45,6 +46,8 @@ public class VulkanImage {
     private int width;
     private int height;
     private List<VulkanImageView> imageViews = new ArrayList<>();
+    private int imageMemoryProperties;
+    private int imageUsage;
 
     public VulkanImage(VulkanDevice device, VulkanImageBuilder builder) throws BuilderNotPopulatedException {
         this.device = device;
@@ -58,54 +61,15 @@ public class VulkanImage {
         this.mipLevels = builder.getMipLevels();
         this.width = builder.getWidth();
         this.height = builder.getHeight();
+        this.imageUsage = builder.getRequiredUsage();
+        this.imageMemoryProperties = builder.getImageMemoryProperties();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             this.image = createImage(stack, builder);
             this.imageMemory = createImageMemory(stack, device, builder.getImageMemoryProperties(), image);
-
         }
 
     }
 
-    public VulkanDevice getDevice() {
-        return device;
-    }
-
-    public long getImage() {
-        return image;
-    }
-
-
-    public int getImageFormat() {
-        return imageFormat;
-    }
-
-    public long getImageMemory() {
-        return imageMemory;
-    }
-
-    public int getImageLayout() {
-        return imageLayout;
-    }
-
-    public int getImageTiling() {
-        return imageTiling;
-    }
-
-    public int getSharingMode() {
-        return sharingMode;
-    }
-
-    public int getSamples() {
-        return samples;
-    }
-
-    public int getAccessMask() {
-        return accessMask;
-    }
-
-    public int getShaderStage() {
-        return shaderStage;
-    }
 
     public void changeLayout(int targetLayout, int targetAccessMask, int targetShaderStage, VulkanQueue queue) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -226,7 +190,7 @@ public class VulkanImage {
             }
             long imageViewHandle = createImageView(stack, this.image, this.imageFormat, 1,
                     imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
-            VulkanImageView imageView = new VulkanImageView(type, imageTarget.getStartLayerIndex(), 1, imageViewHandle);
+            VulkanImageView imageView = new VulkanImageView(device, this, type, imageTarget.getStartLayerIndex(), 1, imageViewHandle);
             imageViews.add(imageView);
             return imageView;
         } else if (type == VK_IMAGE_VIEW_TYPE_2D_ARRAY || type == VK_IMAGE_VIEW_TYPE_CUBE) {
@@ -242,7 +206,7 @@ public class VulkanImage {
                 }
             }
             long viewHandle = createImageView(stack, image, this.imageFormat, imageTarget.getLayersAmount(), imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
-            VulkanImageView view = new VulkanImageView(type, imageTarget.getStartLayerIndex(), layerCount, viewHandle);
+            VulkanImageView view = new VulkanImageView(device, this, type, imageTarget.getStartLayerIndex(), layerCount, viewHandle);
             view.setMipLevel(imageTarget.getMipLevel());
             view.setMipLevelAmount(imageTarget.getMipLevelCount());
             this.imageViews.add(view);
@@ -312,5 +276,102 @@ public class VulkanImage {
             throw new RuntimeException("Failed to create image view");
         }
         return result[0];
+    }
+
+    /**
+     * WARNING ALL DATA IN IMAGE WILL BE LOST! You will also need to recreate views!
+     */
+    public void resize(MemoryStack stack, VkCommandBuffer cmd, int width, int height){
+        destroy();
+        this.width = width;
+        this.height = height;
+        super.destroyed = false;
+        VulkanImageBuilder builder = new VulkanImageBuilder();
+        builder.setFormat(this.imageFormat);
+        builder.setHeight(this.height);
+        builder.setWidth(this.width);
+        builder.setArraySize(this.layerCount);
+        builder.setInitialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+        builder.setImageMemoryProperties(this.imageMemoryProperties);
+        builder.setMipLevels(this.mipLevels);
+        builder.setRequiredUsage(this.imageUsage);
+        builder.setSamples(this.samples);
+        builder.setSharingMode(this.sharingMode);
+        builder.setTiling(this.imageTiling);
+
+        int lastShaderStage = this.shaderStage;
+        int lastLayout = this.imageLayout;
+
+        this.image = createImage(stack, builder);
+        this.imageMemory = createImageMemory(stack, device, builder.getImageMemoryProperties(), this.image);
+
+        changeLayout(stack, lastLayout, accessMask, lastShaderStage, cmd);
+    }
+    @Override
+    public void destroy() {
+        imageViews.forEach(VulkanImageView::destroy);
+        vkDestroyImage(device.getDevice(), image, null);
+        vkFreeMemory(device.getDevice(), imageMemory, null);
+        super.destroy();
+    }
+
+
+
+
+    public VulkanDevice getDevice() {
+        return device;
+    }
+
+    public long getImage() {
+        return image;
+    }
+
+
+    public int getImageFormat() {
+        return imageFormat;
+    }
+
+    public long getImageMemory() {
+        return imageMemory;
+    }
+
+    public int getImageLayout() {
+        return imageLayout;
+    }
+
+    public int getImageTiling() {
+        return imageTiling;
+    }
+
+    public int getSharingMode() {
+        return sharingMode;
+    }
+
+    public int getSamples() {
+        return samples;
+    }
+
+    public int getAccessMask() {
+        return accessMask;
+    }
+
+    public int getShaderStage() {
+        return shaderStage;
+    }
+
+    public int getLayerCount() {
+        return layerCount;
+    }
+
+    public int getMipLevels() {
+        return mipLevels;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

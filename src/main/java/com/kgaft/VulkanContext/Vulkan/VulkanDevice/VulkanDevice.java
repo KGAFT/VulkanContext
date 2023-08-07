@@ -5,12 +5,7 @@ import com.kgaft.VulkanContext.Vulkan.VulkanDevice.DeviceSuitabillity.DeviceSuit
 import com.kgaft.VulkanContext.Vulkan.VulkanInstance;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkDeviceCreateInfo;
-import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
-import org.lwjgl.vulkan.VkQueue;
+import org.lwjgl.vulkan.*;
 
 import static org.lwjgl.vulkan.VK13.*;
 
@@ -93,6 +88,21 @@ public class VulkanDevice {
             }
         }
         throw new RuntimeException("Failed to find suitable memory type");
+    }
+
+    public int findSupportedFormat(List<Integer> candidates, int tiling, int features) {
+        for (int format : candidates) {
+            VkFormatProperties props = VkFormatProperties.calloc();
+            vkGetPhysicalDeviceFormatProperties(baseDevice, format, props);
+
+            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures() & features) == features) {
+                return format;
+            } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures() & features) == features) {
+                return format;
+            }
+            props.free();
+        }
+        throw new RuntimeException("failed to find supported format!");
     }
 
     private void createLogicalDevice(DeviceSuitabilityResults suitabilityResults) {

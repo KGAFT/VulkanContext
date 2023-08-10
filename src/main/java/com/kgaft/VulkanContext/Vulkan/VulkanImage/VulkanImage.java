@@ -28,9 +28,18 @@ import static org.lwjgl.vulkan.VK13.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.management.RuntimeErrorException;
-
 public class VulkanImage extends DestroyableObject {
+    public static int findDepthFormat(VulkanDevice device) {
+        List<Integer> candidates = new ArrayList<>();
+        candidates.add(VK_FORMAT_D32_SFLOAT);
+        candidates.add(VK_FORMAT_D32_SFLOAT_S8_UINT);
+        candidates.add(VK_FORMAT_D24_UNORM_S8_UINT);
+        return device.findSupportedFormat(candidates,
+                VK_IMAGE_TILING_OPTIMAL,
+                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+        );
+    }
+
     private VulkanDevice device;
     private long image;
     private long imageMemory;
@@ -40,7 +49,7 @@ public class VulkanImage extends DestroyableObject {
     private int sharingMode;
     private int samples;
     private int accessMask = 0;
-    private int shaderStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    private int pipelineStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     private int layerCount;
     private int mipLevels;
     private int width;
@@ -71,20 +80,20 @@ public class VulkanImage extends DestroyableObject {
     }
 
 
-    public void changeLayout(int targetLayout, int targetAccessMask, int targetShaderStage, VulkanQueue queue) {
+    public void changeLayout(int targetLayout, boolean isDepth, int targetAccessMask, int targetPipelineStage, VulkanQueue queue) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            changeLayout(stack, targetLayout, targetAccessMask, targetShaderStage, queue);
+            changeLayout(stack, isDepth, targetLayout, targetAccessMask, targetPipelineStage, queue);
         }
     }
 
-    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage,
+    public void changeLayout(MemoryStack stack, boolean isDepth, int targetLayout, int targetAccessMask, int targetPipelineStage,
                              VulkanQueue queue) {
         VkCommandBuffer cmd = queue.beginSingleTimeCommands(stack);
-        changeLayout(stack, targetLayout, targetAccessMask, targetShaderStage, cmd);
+        changeLayout(stack, isDepth, targetLayout, targetAccessMask, targetPipelineStage, cmd);
         queue.endSingleTimeCommands(cmd, stack);
     }
 
-    public void changeLayout(MemoryStack stack, int targetLayout, int targetAccessMask, int targetShaderStage,
+    public void changeLayout(MemoryStack stack, boolean isDepth, int targetLayout, int targetAccessMask, int targetPipelineStage,
                              VkCommandBuffer cmd) {
         VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack);
         barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -93,7 +102,7 @@ public class VulkanImage extends DestroyableObject {
         barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
         barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
         barrier.image(image);
-        barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        barrier.subresourceRange().aspectMask(isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
         barrier.subresourceRange().baseMipLevel(0);
         barrier.subresourceRange().levelCount(this.mipLevels);
         barrier.subresourceRange().baseArrayLayer(0);
@@ -103,14 +112,14 @@ public class VulkanImage extends DestroyableObject {
         barrier.dstAccessMask(targetAccessMask);
 
         vkCmdPipelineBarrier(cmd,
-                this.shaderStage, targetShaderStage,
+                this.pipelineStage, targetPipelineStage,
                 0,
                 null,
                 null,
                 barrier);
         this.accessMask = targetAccessMask;
         this.imageLayout = targetLayout;
-        this.shaderStage = targetShaderStage;
+        this.pipelineStage = targetPipelineStage;
 
     }
 
@@ -121,17 +130,17 @@ public class VulkanImage extends DestroyableObject {
     public void copyToImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, VulkanImage dst, ImageTarget dstTarget, ImageTarget srcTarget){
         copyImage(stack, cmd, isDepth, this.width, this.height, image, imageLayout, srcTarget, dst.image, dst.imageLayout, dstTarget);
     }
-    public void copyFromBuffer(VulkanBuffer buffer, VkCommandBuffer cmd, MemoryStack stack, ImageTarget target){
+    public void copyFromBuffer(VulkanBuffer buffer, boolean isDepth, VkCommandBuffer cmd, MemoryStack stack, ImageTarget target){
         int lastLayout = this.imageLayout;
-        int lastShaderStage = this.shaderStage;
+        int lastShaderStage = this.pipelineStage;
         int lastAccessMask = this.accessMask;
-        changeLayout(stack, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, cmd);
+        changeLayout(stack, isDepth, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, cmd);
 
         VkBufferImageCopy.Buffer region = VkBufferImageCopy.calloc(1, stack);
         region.bufferOffset(0);
         region.bufferRowLength(0);
         region.bufferImageHeight(0);
-        region.imageSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        region.imageSubresource().aspectMask(isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
         region.imageSubresource().mipLevel(target.getMipLevel());
         region.imageSubresource().baseArrayLayer(target.getStartLayerIndex());
         region.imageSubresource().layerCount(target.getLayersAmount());
@@ -139,7 +148,7 @@ public class VulkanImage extends DestroyableObject {
         region.imageExtent(VkExtent3D.calloc(stack).width(width).height(height).depth(1));
 
         vkCmdCopyBufferToImage(cmd, buffer.getBuffer(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
-        changeLayout(stack, lastLayout, lastAccessMask, lastShaderStage, cmd);
+        changeLayout(stack, isDepth, lastLayout, lastAccessMask, lastShaderStage, cmd);
     }
 
     private void copyImage(MemoryStack stack, VkCommandBuffer cmd, boolean isDepth, int width, int height, long src, int srcLayout, ImageTarget srcTarget, long dst, int dstLayout, ImageTarget dstTarget) {
@@ -176,7 +185,7 @@ public class VulkanImage extends DestroyableObject {
         vkCmdClearColorImage(cmd, image, imageLayout, clearColorValue, subresourceRange);
     }
 
-    public VulkanImageView acquireImageView(MemoryStack stack, int type, ImageTarget imageTarget) {
+    public VulkanImageView acquireImageView(MemoryStack stack, boolean isDepth, int type, ImageTarget imageTarget) {
         if (imageTarget.getStartLayerIndex() >= this.layerCount || imageTarget.getStartLayerIndex() < 0) {
             throw new RuntimeException("Failed to acquired image with not existing index: " + imageTarget.getStartLayerIndex());
         }
@@ -188,7 +197,7 @@ public class VulkanImage extends DestroyableObject {
                     return view;
                 }
             }
-            long imageViewHandle = createImageView(stack, this.image, this.imageFormat, 1,
+            long imageViewHandle = createImageView(stack, isDepth, this.image, this.imageFormat, 1,
                     imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
             VulkanImageView imageView = new VulkanImageView(device, this, type, imageTarget.getStartLayerIndex(), 1, imageViewHandle);
             imageViews.add(imageView);
@@ -205,7 +214,7 @@ public class VulkanImage extends DestroyableObject {
                     return view;
                 }
             }
-            long viewHandle = createImageView(stack, image, this.imageFormat, imageTarget.getLayersAmount(), imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
+            long viewHandle = createImageView(stack, isDepth, image, this.imageFormat, imageTarget.getLayersAmount(), imageTarget.getStartLayerIndex(), imageTarget.getMipLevel(), imageTarget.getMipLevelCount(), type);
             VulkanImageView view = new VulkanImageView(device, this, type, imageTarget.getStartLayerIndex(), layerCount, viewHandle);
             view.setMipLevel(imageTarget.getMipLevel());
             view.setMipLevelAmount(imageTarget.getMipLevelCount());
@@ -258,14 +267,14 @@ public class VulkanImage extends DestroyableObject {
         return res[0];
     }
 
-    private long createImageView(MemoryStack stack, long image, int format, int layerCount, int baseArrayLayer, int mipLevelIndex, int mipLevelCount, int type) {
+    private long createImageView(MemoryStack stack, boolean isDepth,  long image, int format, int layerCount, int baseArrayLayer, int mipLevelIndex, int mipLevelCount, int type) {
 
         VkImageViewCreateInfo viewInfo = VkImageViewCreateInfo.calloc(stack);
         viewInfo.sType$Default();
         viewInfo.image(image);
         viewInfo.viewType(type);
         viewInfo.format(format);
-        viewInfo.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+        viewInfo.subresourceRange().aspectMask(isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
         viewInfo.subresourceRange().baseMipLevel(mipLevelIndex);
         viewInfo.subresourceRange().levelCount(mipLevelCount);
         viewInfo.subresourceRange().baseArrayLayer(baseArrayLayer);
@@ -281,7 +290,7 @@ public class VulkanImage extends DestroyableObject {
     /**
      * WARNING ALL DATA IN IMAGE WILL BE LOST! You will also need to recreate views!
      */
-    public void resize(MemoryStack stack, VkCommandBuffer cmd, int width, int height){
+    public void resize(MemoryStack stack, boolean isDepth, VkCommandBuffer cmd, int width, int height){
         destroy();
         this.width = width;
         this.height = height;
@@ -299,13 +308,13 @@ public class VulkanImage extends DestroyableObject {
         builder.setSharingMode(this.sharingMode);
         builder.setTiling(this.imageTiling);
 
-        int lastShaderStage = this.shaderStage;
+        int lastShaderStage = this.pipelineStage;
         int lastLayout = this.imageLayout;
 
         this.image = createImage(stack, builder);
         this.imageMemory = createImageMemory(stack, device, builder.getImageMemoryProperties(), this.image);
 
-        changeLayout(stack, lastLayout, accessMask, lastShaderStage, cmd);
+        changeLayout(stack,isDepth, lastLayout, accessMask, lastShaderStage, cmd);
     }
     @Override
     public void destroy() {
@@ -355,8 +364,8 @@ public class VulkanImage extends DestroyableObject {
         return accessMask;
     }
 
-    public int getShaderStage() {
-        return shaderStage;
+    public int getPipelineStage() {
+        return pipelineStage;
     }
 
     public int getLayerCount() {

@@ -17,7 +17,7 @@ public class VulkanFrameBuffer extends DestroyableObject {
     private VulkanDevice device;
     private long renderPass;
     private long frameBuffer;
-    protected VulkanFrameBuffer(MemoryStack stack, List<VulkanImageView> attachments, long renderPass) {
+    public VulkanFrameBuffer(MemoryStack stack, List<VulkanImageView> attachments, long renderPass) {
         this.attachments = attachments;
         this.renderPass = renderPass;
         create(stack);

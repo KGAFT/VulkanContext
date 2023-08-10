@@ -40,6 +40,7 @@ public class VulkanRenderPass {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.calloc(colorAttachments.size() + 1, stack);
             prepareAttachmentDescription(attachments);
+            attachments.rewind();
             VkAttachmentReference.Buffer references = VkAttachmentReference.calloc(renderPassBuilder.getImagePerStepAmount(), stack);
             VkAttachmentReference depthAttachmentRef = VkAttachmentReference.calloc(stack);
 
@@ -88,7 +89,7 @@ public class VulkanRenderPass {
             imageBuilder.setSamples(VK_SAMPLE_COUNT_1_BIT);
             imageBuilder.setSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             imageBuilder.setRequiredUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-            imageBuilder.setFormat(findDepthFormat());
+            imageBuilder.setFormat(VulkanImage.findDepthFormat(device));
             imageBuilder.setImageMemoryProperties(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             imageBuilder.setMipLevels(0);
             imageBuilder.setArraySize(renderImageAmount);
@@ -137,14 +138,5 @@ public class VulkanRenderPass {
         depthAttachment.layout(depthAttachments.get(0).getImageLayout());
     }
 
-    private int findDepthFormat() {
-        List<Integer> candidates = new ArrayList<>();
-        candidates.add(VK_FORMAT_D32_SFLOAT);
-        candidates.add(VK_FORMAT_D32_SFLOAT_S8_UINT);
-        candidates.add(VK_FORMAT_D24_UNORM_S8_UINT);
-        return device.findSupportedFormat(candidates,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-        );
-    }
+
 }
